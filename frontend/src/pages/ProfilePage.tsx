@@ -5,7 +5,7 @@ import userApi from '@/api/userApi';
 import watchlistApi from '@/api/watchlistApi';
 import moviesApi from '@/api/movieApi';
 import { User, WatchlistItem, UserRating } from '@/api/apiService';
-import { Loader2, Film, /* Calendar, */ User as UserIcon, Settings, Trash2, Star } from 'lucide-react';
+import { Loader2, Film, User as UserIcon, Settings, Trash2, Star } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -51,10 +51,30 @@ export default function ProfilePage() {
     let isMounted = true;
     
     const fetchUserData = async () => {
-      if (!initialized || !keycloak.authenticated)
+      if (!initialized) {
+        return; // Wait until keycloak is initialized
+      }
+      
+      if (!keycloak.authenticated) {
+        if (isMounted) {
+          setLoading(false); // Set loading to false if not authenticated
+        }
+        return;
+      }
       
       try {
         setLoading(true);
+        
+        // Refresh token before making API calls
+        try {
+          await keycloak.updateToken(30);
+        } catch (tokenError) {
+          console.error("Failed to refresh token:", tokenError);
+          if (isMounted) {
+            setLoading(false);
+          }
+          return;
+        }
         
         // Fetch user profile data
         const userProfile = await userApi.getCurrentUser();
@@ -102,7 +122,7 @@ export default function ProfilePage() {
     return () => {
       isMounted = false;
     };
-  }, [initialized, keycloak.authenticated]); // Remove toast from dependencies
+  }, [initialized, keycloak]); // Use keycloak object instead of just authenticated state
 
   // Handle removing item from watchlist
   const handleRemoveFromWatchlist = async (movieId: number) => {
@@ -110,21 +130,36 @@ export default function ProfilePage() {
     
     try {
       setRemovingItemId(movieId);
+      
+      // First make the API call
       await watchlistApi.removeFromWatchlist(movieId);
       
-      // Update watchlist state by filtering out the removed item
-      setWatchlist(prev => prev.filter(item => item.movie.id !== movieId));
+      // Then update the local state safely
+      setWatchlist(prev => {
+        // Create a new array without the removed movie
+        return prev.filter(item => {
+          // Handle both direct movie ID and nested movie objects
+          const itemMovieId = item.movie ? item.movie.id : item.id;
+          return itemMovieId !== movieId;
+        });
+      });
       
-      // Toast removed for regular user action
+      // Close the dialog explicitly
+      setRemovingItemId(null);
+      
+      // Optional: Add a toast confirmation
+      toast({
+        title: "Success",
+        description: "Movie removed from watchlist",
+      });
+      
     } catch (error) {
       console.error('Error removing from watchlist:', error);
-      // Keep error toast for failures
       toast({
         title: 'Error',
         description: 'Failed to remove from watchlist',
         variant: 'destructive',
       });
-    } finally {
       setRemovingItemId(null);
     }
   };
@@ -132,6 +167,15 @@ export default function ProfilePage() {
   const getInitials = (name: string): string => {
     return name.charAt(0).toUpperCase();
   };
+
+  if (!initialized) {
+    return (
+      <div className="flex justify-center items-center h-[70vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-rose-600" />
+        <span className="ml-2">Initializing authentication...</span>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
@@ -360,7 +404,15 @@ export default function ProfilePage() {
       </div>
       
       {/* Remove from watchlist confirmation dialog */}
-      <AlertDialog open={removingItemId !== null} onOpenChange={() => setRemovingItemId(null)}>
+      <AlertDialog open={removingItemId !== null} onOpenChange={(open) => {
+        // Only allow closing if we're not in the middle of an operation
+        if (!open && removingItemId !== null && !watchlist.some(item => {
+          const itemMovieId = item.movie ? item.movie.id : item.id;
+          return itemMovieId === removingItemId;
+        })) {
+          setRemovingItemId(null);
+        }
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remove from Watchlist</AlertDialogTitle>
