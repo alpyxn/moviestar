@@ -53,7 +53,7 @@ const directorsApi = {
       // Try to use the dedicated endpoint
       const response = await publicApiClient.get<Movie[]>(`/directors/${id}/movies`);
       return response.data;
-    } catch (error) {
+    } catch (error: unknown) {
       // Fallback: Get the director and extract movies from there if the endpoint isn't available
       console.warn('Directors filmography endpoint not available, using fallback');
       const director = await directorsApi.getById(id);

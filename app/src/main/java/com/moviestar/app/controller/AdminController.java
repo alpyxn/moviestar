@@ -228,4 +228,13 @@ public class AdminController {
         commentService.deleteComment(commentId);
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * Delete all comments from a specific user
+     */
+    @DeleteMapping("/users/{username}/comments")
+    public ResponseEntity<Void> deleteAllUserComments(@PathVariable String username) {
+        commentService.deleteAllUserComments(username);
+        return ResponseEntity.noContent().build();
+    }
 }

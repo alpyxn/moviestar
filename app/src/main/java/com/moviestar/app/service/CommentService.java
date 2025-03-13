@@ -200,4 +200,30 @@ public class CommentService {
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
+    
+    /**
+     * Delete all comments from a specific user
+     * This is an admin-only operation
+     */
+    @Transactional
+    public void deleteAllUserComments(String username) {
+        try {
+            // Get all comments by the user
+            List<CommentDTO> userComments = commentRepository.findByUsernameOrderByCreatedAtDesc(username);
+            
+            // Delete likes for each comment individually to avoid issues
+            for (CommentDTO comment : userComments) {
+                commentLikeRepository.deleteByCommentId(comment.getId());
+            }
+            
+            // Delete all comments by username using individual deletes instead of bulk delete
+            for (CommentDTO comment : userComments) {
+                commentRepository.deleteById(comment.getId());
+            }
+        } catch (Exception e) {
+            // Log the full error with stack trace
+            e.printStackTrace();
+            throw new RuntimeException("Failed to delete all comments for user: " + username, e);
+        }
+    }
 }

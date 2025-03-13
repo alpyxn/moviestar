@@ -2,11 +2,15 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useKeycloak } from '@react-keycloak/web';
 import moviesApi from '@/api/movieApi';
+import userApi from '@/api/userApi';
+import actorsApi from '@/api/actorsApi'; // Add import for actorsApi
+import directorsApi from '@/api/directorsApi'; // Add import for directorsApi
 import watchlistApi from '@/api/watchlistApi';
-import { Movie, Comment, WatchlistStatus,LikeStatus  } from '@/api/apiService';
+import { Movie, Comment, WatchlistStatus, LikeStatus, User } from '@/api/apiService';
 import { Button } from '@/components/ui/button';
 import {
   Card,
+  CardHeader,
   CardContent,
 } from '@/components/ui/card';
 import {
@@ -17,17 +21,17 @@ import {
 } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
-import { 
+import {
   Heart,
-  ThumbsUp, 
-  ThumbsDown, 
-  Star, 
-  Calendar, 
+  ThumbsUp,
+  ThumbsDown,
+  Star,
+  Calendar,
   MessageSquare,
   Loader2,
   Plus,
   Check,
-  User,
+  User as UserIcon,
   Edit,
   Trash2,
   Shield
@@ -50,7 +54,7 @@ import {
 export default function MovieDetails() {
   const { id } = useParams<{ id: string }>();
   const movieId = parseInt(id || '0');
-  
+
   const [movie, setMovie] = useState<Movie | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentText, setCommentText] = useState('');
@@ -70,30 +74,107 @@ export default function MovieDetails() {
   const [editCommentText, setEditCommentText] = useState('');
   const [isEditingComment, setIsEditingComment] = useState(false);
   const [isDeletingUserComment, setIsDeletingUserComment] = useState(false);
+  const [commentUsers, setCommentUsers] = useState<Record<string, User>>({});
+  const [loadingUserProfiles, setLoadingUserProfiles] = useState(false);
   const editTextAreaRef = useRef<HTMLTextAreaElement>(null);
 
   const navigate = useNavigate();
   const { toast } = useToast();
   const { keycloak, initialized } = useKeycloak();
   const isAuthenticated = initialized && keycloak.authenticated;
-  
+
   // Check if user is admin
-  const isAdmin = initialized && 
-    keycloak.authenticated && 
+  const isAdmin = initialized &&
+    keycloak.authenticated &&
     keycloak.hasRealmRole('ADMIN');
+
+  // Add new state for actor and director images
+  const [actorImages, setActorImages] = useState<Record<number, string>>({});
+  const [directorImages, setDirectorImages] = useState<Record<number, string>>({});
+
+  // New effect to fetch actor and director images
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchActorDirectorImages = async () => {
+      if (!movie) return;
+
+      // Fetch actor images
+      if (movie.actors && movie.actors.length > 0) {
+        const actorImagesMap: Record<number, string> = {};
+
+        await Promise.all(
+          movie.actors.map(async (actor) => {
+            if (!isMounted) return;
+
+            try {
+              if (!actor.pictureUrl) {
+                const pictureData = await actorsApi.getPicture(actor.id);
+                if (pictureData?.pictureUrl) {
+                  actorImagesMap[actor.id] = pictureData.pictureUrl;
+                }
+              } else {
+                actorImagesMap[actor.id] = actor.pictureUrl;
+              }
+            } catch (error) {
+              console.error(`Failed to fetch image for actor ${actor.id}:`, error);
+            }
+          })
+        );
+
+        if (isMounted) {
+          setActorImages(actorImagesMap);
+        }
+      }
+
+      // Fetch director images
+      if (movie.directors && movie.directors.length > 0) {
+        const directorImagesMap: Record<number, string> = {};
+
+        await Promise.all(
+          movie.directors.map(async (director) => {
+            if (!isMounted) return;
+
+            try {
+              if (!director.pictureUrl) {
+                const pictureData = await directorsApi.getPicture(director.id);
+                if (pictureData?.pictureUrl) {
+                  directorImagesMap[director.id] = pictureData.pictureUrl;
+                }
+              } else {
+                directorImagesMap[director.id] = director.pictureUrl;
+              }
+            } catch (error) {
+              console.error(`Failed to fetch image for director ${director.id}:`, error);
+            }
+          })
+        );
+
+        if (isMounted) {
+          setDirectorImages(directorImagesMap);
+        }
+      }
+    };
+
+    fetchActorDirectorImages();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [movie]);
 
   // Fetch movie data, comments, and user's rating on component mount
   useEffect(() => {
     const fetchMovieData = async () => {
       if (!movieId) return;
-      
+
       try {
         setLoading(true);
         const [movieData, commentsData] = await Promise.all([
           moviesApi.getById(movieId),
           moviesApi.getComments(movieId, commentSortBy)
         ]);
-        
+
         setMovie({
           ...movieData,
           actors: movieData.actors || [],
@@ -101,7 +182,7 @@ export default function MovieDetails() {
           genres: movieData.genres || []
         });
         setComments(commentsData);
-        
+
         // If user is authenticated, fetch user-specific data
         if (isAuthenticated) {
           try {
@@ -109,13 +190,13 @@ export default function MovieDetails() {
               watchlistApi.checkWatchlistStatus(movieId),
               moviesApi.getUserRating(movieId)
             ]);
-            
+
             setWatchlistStatus(status);
             setUserRating(userRating);
-            
+
             // Fetch like statuses for comments...
             const statuses: Record<number, LikeStatus> = {};
-            
+
             await Promise.all(
               commentsData.map(async (comment) => {
                 try {
@@ -126,9 +207,9 @@ export default function MovieDetails() {
                 }
               })
             );
-            
+
             setCommentLikeStatuses(statuses);
-            
+
           } catch (error) {
             console.error('Error fetching user specific data:', error);
           }
@@ -146,12 +227,63 @@ export default function MovieDetails() {
     };
 
     fetchMovieData();
-    
+
     // Cleanup function to prevent state updates after unmount
     return () => {
       // This empty cleanup function helps prevent updates after unmount
     };
   }, [movieId, isAuthenticated, commentSortBy]); // Removed toast from dependencies
+
+  // New effect to fetch user profiles for comments
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchUserProfiles = async () => {
+      if (comments.length === 0) return;
+
+      // Get unique usernames from comments
+      const uniqueUsernames = Array.from(new Set(comments.map(comment => comment.username)));
+      if (uniqueUsernames.length === 0) return;
+
+      setLoadingUserProfiles(true);
+      const profiles: Record<string, User> = {};
+
+      try {
+        // Fetch each user profile sequentially
+        for (const username of uniqueUsernames) {
+          try {
+            if (!isMounted) break;
+            const user = await userApi.getUserByUsername(username);
+            profiles[username] = user;
+          } catch (error) {
+            console.error(`Error fetching user profile for ${username}:`, error);
+            // Continue with other users even if one fails
+          }
+        }
+
+        if (isMounted) {
+          setCommentUsers(profiles);
+        }
+      } catch (error) {
+        console.error('Error fetching user profiles:', error);
+      } finally {
+        if (isMounted) {
+          setLoadingUserProfiles(false);
+        }
+      }
+    };
+
+    fetchUserProfiles();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [comments]);
+
+  // Add a function to get user initials for fallback avatars
+  const getUserInitials = (username: string): string => {
+    return username.charAt(0).toUpperCase();
+  };
 
   // Handler for adding/removing movie from watchlist
   const handleWatchlistToggle = async () => {
@@ -159,10 +291,10 @@ export default function MovieDetails() {
       keycloak.login();
       return;
     }
-    
+
     try {
       setIsAddingToWatchlist(true);
-      
+
       if (watchlistStatus?.inWatchlist) {
         await watchlistApi.removeFromWatchlist(movieId);
         setWatchlistStatus({ inWatchlist: false });
@@ -188,17 +320,17 @@ export default function MovieDetails() {
       keycloak.login();
       return;
     }
-    
+
     if (!commentText.trim()) return;
-    
+
     try {
       setSubmittingComment(true);
       await moviesApi.addComment(movieId, commentText);
-      
+
       // Refresh comments after submission
       const newComments = await moviesApi.getComments(movieId, commentSortBy);
       setComments(newComments);
-      
+
       setCommentText('');
     } catch (error) {
       console.error('Error submitting comment:', error);
@@ -218,14 +350,14 @@ export default function MovieDetails() {
       keycloak.login();
       return;
     }
-    
+
     // If user clicks the same rating, remove it
     if (rating === userRating) {
       try {
         setIsRating(true);
         await moviesApi.removeRating(movieId);
         setUserRating(null);
-        
+
         // Refresh movie data to get updated ratings
         const updatedMovie = await moviesApi.getById(movieId);
         setMovie(updatedMovie);
@@ -241,14 +373,14 @@ export default function MovieDetails() {
       }
       return;
     }
-    
+
     // Otherwise, set or update the rating
     try {
       setIsRating(true);
       await moviesApi.rateMovie(movieId, rating);
-      
+
       setUserRating(rating);
-      
+
       // Refresh movie data to get updated ratings
       const updatedMovie = await moviesApi.getById(movieId);
       setMovie(updatedMovie);
@@ -270,12 +402,12 @@ export default function MovieDetails() {
       keycloak.login();
       return;
     }
-    
+
     try {
       setIsSubmittingLike(commentId);
-      
+
       const currentStatus = commentLikeStatuses[commentId] || { liked: false, disliked: false };
-      
+
       // If trying to set the same state, remove it
       if (
         (isLike === true && currentStatus.liked) ||
@@ -296,11 +428,11 @@ export default function MovieDetails() {
           });
         }
       }
-      
+
       // Refresh comments to get updated like counts
       const updatedComments = await moviesApi.getComments(movieId, commentSortBy);
       setComments(updatedComments);
-      
+
     } catch (error) {
       console.error('Error updating comment reaction:', error);
       toast({
@@ -338,7 +470,7 @@ export default function MovieDetails() {
           return;
         }
       }
-      
+
       await adminApi.deleteMovie(movieId);
       toast({
         title: "Success",
@@ -357,13 +489,37 @@ export default function MovieDetails() {
     }
   };
 
-  // Add handler to delete a comment as admin
+  // Add handler to edit own comment
+  const handleEditComment = async () => {
+    if (!isAuthenticated || !editCommentId) return;
+
+    try {
+      setIsEditingComment(true);
+      await moviesApi.updateComment(editCommentId, editCommentText);
+
+      // Refresh comments after editing
+      const updatedComments = await moviesApi.getComments(movieId, commentSortBy);
+      setComments(updatedComments);
+      setEditCommentId(null); // Reset edit mode after successful update
+    } catch (error) {
+      console.error('Error updating comment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update comment",
+        variant: "destructive",
+      });
+    } finally {
+      setIsEditingComment(false);
+    }
+  };
+
+  // Complete the missing function
   const handleDeleteComment = async (commentId: number) => {
     if (!isAdmin) return;
 
     try {
       setIsDeletingComment(true);
-      
+
       // Ensure token is fresh before making admin requests
       if (keycloak.authenticated) {
         try {
@@ -379,15 +535,14 @@ export default function MovieDetails() {
           return;
         }
       }
-      
-      // Implement API call to delete comment
+
       await adminApi.deleteComment(commentId);
-      
+
       toast({
         title: "Success",
         description: "Comment deleted successfully",
       });
-      
+
       // Refresh comments after deletion
       const updatedComments = await moviesApi.getComments(movieId, commentSortBy);
       setComments(updatedComments);
@@ -404,40 +559,22 @@ export default function MovieDetails() {
     }
   };
 
-  // Add handler to edit own comment
-  const handleEditComment = async () => {
-    if (!isAuthenticated || !editCommentId) return;
-    
-    try {
-      setIsEditingComment(true);
-      await moviesApi.updateComment(editCommentId, editCommentText);
-      
-      // Refresh comments after editing
-      const updatedComments = await moviesApi.getComments(movieId, commentSortBy);
-      setComments(updatedComments);
-    } catch (error) {
-      console.error('Error updating comment:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update comment",
-        variant: "destructive",
-      });
-    } finally {
-      setIsEditingComment(false);
-    }
-  };
-
   // Add handler to delete own comment
   const handleDeleteUserComment = async (commentId: number) => {
     if (!isAuthenticated) return;
-    
+
     try {
       setIsDeletingUserComment(true);
       await moviesApi.deleteComment(commentId);
-      
+
       // Refresh comments after deletion
       const updatedComments = await moviesApi.getComments(movieId, commentSortBy);
       setComments(updatedComments);
+
+      toast({
+        title: "Success",
+        description: "Comment deleted successfully",
+      });
     } catch (error) {
       console.error('Error deleting comment:', error);
       toast({
@@ -482,45 +619,45 @@ export default function MovieDetails() {
   return (
     <div className="min-h-screen">
       {/* Hero Section with Backdrop */}
-      <div 
+      <div
         className="h-[50vh] bg-cover bg-center relative"
         style={{ backgroundImage: `url(${movie.backdropURL})` }}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-background" />
-        
+
         <div className="container mx-auto h-full flex items-end pb-8 px-4 relative z-10">
           <div className="flex flex-col md:flex-row gap-6 items-start w-full">
             {/* Poster */}
             <div className="w-40 md:w-64 rounded-lg overflow-hidden shadow-xl">
-              <img 
-                src={movie.posterURL} 
-                alt={movie.title} 
+              <img
+                src={movie.posterURL}
+                alt={movie.title}
                 className="w-full h-auto"
               />
             </div>
-            
+
             {/* Movie Info */}
             <div className="text-white flex-grow">
               <div className="flex justify-between items-start">
                 <h1 className="text-3xl md:text-5xl font-bold">{movie.title}</h1>
-                
+
                 {isAdmin && (
                   <div className="flex items-center bg-black/50 rounded-lg p-2 gap-2">
                     <Shield className="h-4 w-4 text-yellow-500" />
                     <span className="text-sm text-yellow-500 font-medium">Admin</span>
-                    
+
                     <div className="flex ml-2 gap-1">
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
                         className="h-8 border-gray-600 bg-transparent hover:bg-gray-800"
                         onClick={() => navigate(`/admin/movies/edit/${movieId}`)}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
+                      <Button
+                        size="sm"
+                        variant="outline"
                         className="h-8 border-red-600 text-red-500 bg-transparent hover:bg-red-900/30"
                         onClick={() => setDeleteMovieId(movieId)}
                       >
@@ -530,32 +667,32 @@ export default function MovieDetails() {
                   </div>
                 )}
               </div>
-              
+
               <div className="flex flex-wrap gap-4 mt-3 items-center">
                 <div className="flex items-center">
                   <Star className="h-5 w-5 text-yellow-500 mr-1" />
                   <span className="font-semibold">{movie.averageRating.toFixed(1)}</span>
                   <span className="text-sm text-gray-300 ml-1">({movie.totalRatings} ratings)</span>
                 </div>
-                
+
                 <div className="flex items-center">
                   <Calendar className="h-4 w-4 mr-1" />
                   <span>{movie.year}</span>
                 </div>
-                
+
                 <div className="flex flex-wrap gap-1">
                   {(movie.genres || []).map((genre) => (
-                    <span 
-                      key={genre.id} 
+                    <span
+                      key={genre.id}
                       className="px-2 py-1 bg-gray-700 rounded-full text-xs"
                     >
                       {genre.genre}
                     </span>
                   ))}
                 </div>
-                
+
                 {isAuthenticated && (
-                  <Button 
+                  <Button
                     size="sm"
                     className="ml-auto flex items-center gap-1 bg-slate-700"
                     onClick={handleWatchlistToggle}
@@ -576,7 +713,7 @@ export default function MovieDetails() {
           </div>
         </div>
       </div>
-      
+
       {/* Content Section */}
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -589,7 +726,7 @@ export default function MovieDetails() {
                 {movie.description}
               </p>
             </section>
-            
+
             {/* Cast and Crew Tabs */}
             <section>
               <Tabs defaultValue="cast">
@@ -597,38 +734,51 @@ export default function MovieDetails() {
                   <TabsTrigger value="cast">Cast</TabsTrigger>
                   <TabsTrigger value="directors">Directors</TabsTrigger>
                 </TabsList>
-                
+
                 <TabsContent value="cast" className="space-y-4">
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                    {(movie.actors || []).map((actor) => (
-                      <Link 
-                        to={`/actors/${actor.id}`} 
-                        key={actor.id}
-                        className="group"
-                      >
-                        <Card className="overflow-hidden h-full transition-all hover:shadow-md">
-                          <CardContent className="p-3">
-                            <div className="w-full pb-[100%] relative overflow-hidden rounded-full mb-2">
-                              {actor.pictureUrl ? (
-                                <img 
-                                  src={actor.pictureUrl} 
-                                  alt={`${actor.name} ${actor.surname}`}
-                                  className="absolute inset-0 w-full h-full object-cover"
-                                />
-                              ) : (
+                    {(movie.actors || []).map((actor) => {
+                      const pictureUrl = actorImages[actor.id] || actor.pictureUrl;
+
+                      return (
+                        <Link
+                          to={`/actors/${actor.id}`}
+                          key={actor.id}
+                          className="group"
+                        >
+                          <Card className="overflow-hidden h-full transition-all hover:shadow-md">
+                            <CardContent className="p-3">
+                              <div className="w-full pb-[100%] relative overflow-hidden rounded-full mb-2">
                                 <div className="absolute inset-0 bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
-                                  <User className="h-12 w-12 text-gray-400" />
+                                  {pictureUrl ? (
+                                    <>
+                                      <img
+                                        src={pictureUrl}
+                                        alt={`${actor.name} ${actor.surname}`}
+                                        className="absolute inset-0 w-full h-full object-cover"
+                                        onError={(e) => {
+                                          const target = e.target as HTMLImageElement;
+                                          target.onerror = null;
+                                          target.style.display = "none";
+                                          target.parentElement!.querySelector('.fallback-icon')!.classList.remove('hidden');
+                                        }}
+                                      />
+                                      <UserIcon className="h-12 w-12 text-gray-400 hidden fallback-icon" />
+                                    </>
+                                  ) : (
+                                    <UserIcon className="h-12 w-12 text-gray-400" />
+                                  )}
                                 </div>
-                              )}
-                            </div>
-                            <h3 className="font-medium text-center group-hover:text-rose-600 transition-colors">
-                              {actor.name} {actor.surname}
-                            </h3>
-                          </CardContent>
-                        </Card>
-                      </Link>
-                    ))}
-                    
+                              </div>
+                              <h3 className="font-medium text-center group-hover:text-rose-600 transition-colors">
+                                {actor.name} {actor.surname}
+                              </h3>
+                            </CardContent>
+                          </Card>
+                        </Link>
+                      );
+                    })}
+
                     {/* Show message if no actors */}
                     {(!movie.actors || movie.actors.length === 0) && (
                       <div className="col-span-full text-center py-8 text-gray-500">
@@ -637,38 +787,51 @@ export default function MovieDetails() {
                     )}
                   </div>
                 </TabsContent>
-                
+
                 <TabsContent value="directors" className="space-y-4">
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                    {(movie.directors || []).map((director) => (
-                      <Link 
-                        to={`/directors/${director.id}`} 
-                        key={director.id}
-                        className="group"
-                      >
-                        <Card className="overflow-hidden h-full transition-all hover:shadow-md">
-                          <CardContent className="p-3">
-                            <div className="w-full pb-[100%] relative overflow-hidden rounded-full mb-2">
-                              {director.pictureUrl ? (
-                                <img 
-                                  src={director.pictureUrl} 
-                                  alt={`${director.name} ${director.surname}`}
-                                  className="absolute inset-0 w-full h-full object-cover"
-                                />
-                              ) : (
+                    {(movie.directors || []).map((director) => {
+                      const pictureUrl = directorImages[director.id] || director.pictureUrl;
+
+                      return (
+                        <Link
+                          to={`/directors/${director.id}`}
+                          key={director.id}
+                          className="group"
+                        >
+                          <Card className="overflow-hidden h-full transition-all hover:shadow-md">
+                            <CardContent className="p-3">
+                              <div className="w-full pb-[100%] relative overflow-hidden rounded-full mb-2">
                                 <div className="absolute inset-0 bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
-                                  <User className="h-12 w-12 text-gray-400" />
+                                  {pictureUrl ? (
+                                    <>
+                                      <img
+                                        src={pictureUrl}
+                                        alt={`${director.name} ${director.surname}`}
+                                        className="absolute inset-0 w-full h-full object-cover"
+                                        onError={(e) => {
+                                          const target = e.target as HTMLImageElement;
+                                          target.onerror = null;
+                                          target.style.display = "none";
+                                          target.parentElement!.querySelector('.fallback-icon')!.classList.remove('hidden');
+                                        }}
+                                      />
+                                      <UserIcon className="h-12 w-12 text-gray-400 hidden fallback-icon" />
+                                    </>
+                                  ) : (
+                                    <UserIcon className="h-12 w-12 text-gray-400" />
+                                  )}
                                 </div>
-                              )}
-                            </div>
-                            <h3 className="font-medium text-center group-hover:text-rose-600 transition-colors">
-                              {director.name} {director.surname}
-                            </h3>
-                          </CardContent>
-                        </Card>
-                      </Link>
-                    ))}
-                    
+                              </div>
+                              <h3 className="font-medium text-center group-hover:text-rose-600 transition-colors">
+                                {director.name} {director.surname}
+                              </h3>
+                            </CardContent>
+                          </Card>
+                        </Link>
+                      );
+                    })}
+
                     {/* Show message if no directors */}
                     {(!movie.directors || movie.directors.length === 0) && (
                       <div className="col-span-full text-center py-8 text-gray-500">
@@ -679,15 +842,15 @@ export default function MovieDetails() {
                 </TabsContent>
               </Tabs>
             </section>
-            
+
             {/* Comments Section */}
             <section className="space-y-6">
               <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold">Comments</h2>
-                
+
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-500">Sort by:</span>
-                  <select 
+                  <select
                     className="text-sm border rounded-md py-1 px-2"
                     value={commentSortBy}
                     onChange={(e) => handleSortComments(e.target.value)}
@@ -698,7 +861,7 @@ export default function MovieDetails() {
                   </select>
                 </div>
               </div>
-              
+
               {/* Add a comment form - only for authenticated users */}
               {isAuthenticated ? (
                 <div className="space-y-4">
@@ -731,15 +894,15 @@ export default function MovieDetails() {
               ) : (
                 <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg text-center">
                   <p className="text-gray-600 dark:text-gray-300 mb-2">Sign in to leave a comment</p>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={() => keycloak.login()}
                   >
                     Sign In
                   </Button>
                 </div>
               )}
-              
+
               {/* Comments List */}
               <div className="space-y-4 mt-6">
                 {comments.length === 0 ? (
@@ -751,24 +914,42 @@ export default function MovieDetails() {
                   comments.map((comment) => {
                     const likeStatus = commentLikeStatuses[comment.id] || { liked: false, disliked: false };
                     const isCommentAuthor = isAuthenticated && keycloak.tokenParsed?.preferred_username === comment.username;
-                    
+                    const userProfile = commentUsers[comment.username];
+
                     return (
-                      <div key={comment.id} className="border rounded-lg p-4">
-                        <div className="flex justify-between">
-                          <div className="flex items-center gap-2">
-                            <Avatar>
-                              <AvatarFallback>{comment.username[0].toUpperCase()}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <h4 className="font-semibold">{comment.username}</h4>
-                              <time className="text-xs text-gray-500">
-                                {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
-                              </time>
-                            </div>
-                          </div>
-                          
-                          {/* Comment Controls */}
-                          <div>
+                      <Card key={comment.id} className="border rounded-lg p-4">
+                        <CardHeader className="p-3 pb-1">
+                          <div className="flex justify-between items-start">
+                            <Link
+                              to={`/users/${comment.username}`}
+                              className="flex items-center gap-2 hover:underline group"
+                            >
+                              <Avatar className="h-8 w-8 group-hover:ring-2 group-hover:ring-rose-500 transition-all">
+                                {userProfile?.profilePictureUrl ? (
+                                  <img
+                                    src={userProfile.profilePictureUrl}
+                                    alt={`${comment.username}'s profile`}
+                                    className="h-full w-full object-cover"
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.onerror = null;
+                                      target.style.display = "none";
+                                    }}
+                                  />
+                                ) : (
+                                  <AvatarFallback className="bg-rose-100 text-rose-800">
+                                    {getUserInitials(comment.username)}
+                                  </AvatarFallback>
+                                )}
+                              </Avatar>
+                              <div>
+                                <h4 className="font-semibold group-hover:text-rose-600 transition-colors">{comment.username}</h4>
+                                <time className="text-xs text-gray-500">
+                                  {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
+                                  {comment.updatedAt && ` (edited)`}
+                                </time>
+                              </div>
+                            </Link>
                             {/* Admin Delete Button */}
                             {isAdmin && (
                               <Button
@@ -781,7 +962,7 @@ export default function MovieDetails() {
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             )}
-                            
+
                             {/* User's Own Comment Controls */}
                             {isCommentAuthor && (
                               <div className="flex">
@@ -813,92 +994,92 @@ export default function MovieDetails() {
                               </div>
                             )}
                           </div>
-                        </div>
-                        
-                        {/* Comment Content - Show edit form or comment text */}
-                        {editCommentId === comment.id ? (
-                          <div className="mt-2 space-y-2">
-                            <Textarea
-                              ref={editTextAreaRef}
-                              value={editCommentText}
-                              onChange={(e) => setEditCommentText(e.target.value)}
-                              className="min-h-[80px] resize-none"
-                            />
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setEditCommentId(null)}
-                              >
-                                Cancel
-                              </Button>
-                              <Button
-                                size="sm"
-                                onClick={handleEditComment}
-                                disabled={isEditingComment || !editCommentText.trim() || editCommentText === comment.comment}
-                                className="bg-blue-600 hover:bg-blue-700"
-                              >
-                                {isEditingComment ? (
-                                  <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Saving...
-                                  </>
-                                ) : 'Save'}
-                              </Button>
+
+                          {/* Comment Content - Show edit form or comment text */}
+                          {editCommentId === comment.id ? (
+                            <div className="mt-2 space-y-2">
+                              <Textarea
+                                ref={editTextAreaRef}
+                                value={editCommentText}
+                                onChange={(e) => setEditCommentText(e.target.value)}
+                                className="min-h-[80px] resize-none"
+                              />
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setEditCommentId(null)}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={handleEditComment}
+                                  disabled={isEditingComment || !editCommentText.trim() || editCommentText === comment.comment}
+                                  className="bg-blue-600 hover:bg-blue-700"
+                                >
+                                  {isEditingComment ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Saving...
+                                    </>
+                                  ) : 'Save'}
+                                </Button>
+                              </div>
                             </div>
-                          </div>
-                        ) : (
-                          <p className="my-3">{comment.comment}</p>
-                        )}
-                        
-                        {/* Like/Dislike Buttons - only show if not in edit mode */}
-                        {editCommentId !== comment.id && (
-                          <div className="flex items-center gap-4 mt-2">
-                            <button
-                              onClick={() => handleCommentReaction(comment.id, true)}
-                              disabled={isSubmittingLike === comment.id}
-                              className="flex items-center gap-1 text-sm disabled:opacity-50"
-                              aria-label="Like comment"
-                            >
-                              <ThumbsUp
-                                size={16}
-                                className={cn(
-                                  "transition-colors",
-                                  likeStatus.liked ? "text-green-500 fill-green-500" : "text-gray-500"
-                                )}
-                              />
-                              <span>{comment.likesCount || 0}</span>
-                            </button>
-                            
-                            <button
-                              onClick={() => handleCommentReaction(comment.id, false)}
-                              disabled={isSubmittingLike === comment.id}
-                              className="flex items-center gap-1 text-sm disabled:opacity-50"
-                              aria-label="Dislike comment"
-                            >
-                              <ThumbsDown
-                                size={16}
-                                className={cn(
-                                  "transition-colors",
-                                  likeStatus.disliked ? "text-red-500 fill-red-500" : "text-gray-500"
-                                )}
-                              />
-                              <span>{comment.dislikesCount || 0}</span>
-                            </button>
-                            
-                            {isSubmittingLike === comment.id && (
-                              <Loader2 size={16} className="animate-spin text-gray-500" />
-                            )}
-                          </div>
-                        )}
-                      </div>
+                          ) : (
+                            <p className="my-3">{comment.comment}</p>
+                          )}
+
+                          {/* Like/Dislike Buttons - only show if not in edit mode */}
+                          {editCommentId !== comment.id && (
+                            <div className="flex items-center gap-4 mt-2">
+                              <button
+                                onClick={() => handleCommentReaction(comment.id, true)}
+                                disabled={isSubmittingLike === comment.id}
+                                className="flex items-center gap-1 text-sm disabled:opacity-50"
+                                aria-label="Like comment"
+                              >
+                                <ThumbsUp
+                                  size={16}
+                                  className={cn(
+                                    "transition-colors",
+                                    likeStatus.liked ? "text-green-500 fill-green-500" : "text-gray-500"
+                                  )}
+                                />
+                                <span>{comment.likesCount || 0}</span>
+                              </button>
+
+                              <button
+                                onClick={() => handleCommentReaction(comment.id, false)}
+                                disabled={isSubmittingLike === comment.id}
+                                className="flex items-center gap-1 text-sm disabled:opacity-50"
+                                aria-label="Dislike comment"
+                              >
+                                <ThumbsDown
+                                  size={16}
+                                  className={cn(
+                                    "transition-colors",
+                                    likeStatus.disliked ? "text-red-500 fill-red-500" : "text-gray-500"
+                                  )}
+                                />
+                                <span>{comment.dislikesCount || 0}</span>
+                              </button>
+
+                              {isSubmittingLike === comment.id && (
+                                <Loader2 size={16} className="animate-spin text-gray-500" />
+                              )}
+                            </div>
+                          )}
+                        </CardHeader>
+                      </Card>
                     );
                   })
                 )}
               </div>
             </section>
           </div>
-          
+
           {/* Sidebar - 1/3 width on large screens */}
           <div className="space-y-6">
             {/* Rating Section */}
@@ -908,7 +1089,7 @@ export default function MovieDetails() {
                   <Star className="h-5 w-5 text-yellow-500 mr-2" />
                   Rating
                 </h3>
-                
+
                 <div className="flex items-center gap-2 mb-4">
                   <div className="text-4xl font-bold">{movie.averageRating.toFixed(1)}</div>
                   <div className="text-gray-500">
@@ -916,7 +1097,7 @@ export default function MovieDetails() {
                     <div className="text-xs">{movie.totalRatings} ratings</div>
                   </div>
                 </div>
-                
+
                 {isAuthenticated ? (
                   <div className="space-y-2">
                     <h4 className="text-sm font-medium">Rate this movie:</h4>
@@ -939,9 +1120,9 @@ export default function MovieDetails() {
                     </div>
                   </div>
                 ) : (
-                  <Button 
-                    variant="outline" 
-                    className="w-full" 
+                  <Button
+                    variant="outline"
+                    className="w-full"
                     onClick={() => keycloak.login()}
                   >
                     Sign in to rate
@@ -958,7 +1139,7 @@ export default function MovieDetails() {
                     <Heart className="h-5 w-5 text-rose-500 mr-2" />
                     Watchlist
                   </h3>
-                  
+
                   <Button
                     className={cn(
                       "w-full",
@@ -1025,7 +1206,7 @@ export default function MovieDetails() {
                       // Check if the user is admin or the comment author and use appropriate handler
                       const comment = comments.find(c => c.id === deleteCommentId);
                       const isCommentAuthor = isAuthenticated && keycloak.tokenParsed?.preferred_username === comment?.username;
-                      
+
                       if (deleteCommentId && isAdmin && !isCommentAuthor) {
                         handleDeleteComment(deleteCommentId);
                       } else if (deleteCommentId) {

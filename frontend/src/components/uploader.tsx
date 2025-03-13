@@ -8,7 +8,8 @@ interface ImageUploadProps {
   defaultImage?: string;
   className?: string;
   id?: string;
-  aspectRatio?: 'vertical' | 'horizontal' | 'square'; // New prop for aspect ratio
+  aspectRatio?: 'vertical' | 'horizontal' | 'square';
+  placeholderText?: string; // New prop for custom placeholder text
 }
 
 export function Uploader({ 
@@ -16,7 +17,8 @@ export function Uploader({
   defaultImage, 
   className = '', 
   id = 'image-upload',
-  aspectRatio = 'horizontal' // Default to horizontal
+  aspectRatio = 'horizontal',
+  placeholderText // Added new prop
 }: ImageUploadProps) {
   const [image, setImage] = useState<string | null>(defaultImage || null);
   const [isUploading, setIsUploading] = useState(false);
@@ -162,7 +164,7 @@ export function Uploader({
                         flex flex-col items-center justify-center bg-gray-50 ${getAspectRatioClass()}`}>
           <Upload className="h-10 w-10 text-gray-400 mb-2" />
           <p className="text-sm text-gray-500 mb-2">
-            {aspectRatio === 'vertical' ? 'Upload poster image' : 'Upload backdrop image'}
+            {placeholderText || (aspectRatio === 'vertical' ? 'Upload poster image' : 'Upload image')}
           </p>
           <p className="text-xs text-gray-400">PNG, JPG, GIF up to 5MB</p>
         </div>

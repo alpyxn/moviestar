@@ -171,15 +171,17 @@ The system identifies users by the `preferred_username` claim from the Keycloak 
       }
     ],
     "directors": [
-      {
-        "id": 1,
-        "name": "Christopher",
-        "surname": "Nolan",
-        "birthDay": "1970-07-30",
-        "about": "British-American film director...",
-        "pictureUrl": "https://example.com/nolan.jpg",
-        "movieIds": [1, 2]
-      }
+      [
+        {
+          "id": 1,
+          "name": "Christopher",
+          "surname": "Nolan",
+          "birthDay": "1970-07-30",
+          "about": "British-American film director...",
+          "pictureUrl": "https://example.com/nolan.jpg",
+          "movieIds": [1, 2]
+        }
+      ],
     ],
     "posterURL": "https://example.com/poster.jpg",
     "backdropURL": "https://example.com/backdrop.jpg",
@@ -849,7 +851,7 @@ The system identifies users by the `preferred_username` claim from the Keycloak 
 - **URL**: `/api/users/profile/picture`
 - **Method**: `PUT`
 - **Authentication**: Authenticated user
-- **Description**: Updates the user's profile picture URL
+- **Description**: Updates the user's profile picture URL. Send `null` or empty string to remove the profile picture.
 - **Request Body**:
 ```json
 {
@@ -865,6 +867,12 @@ The system identifies users by the `preferred_username` claim from the Keycloak 
   "createdAt": "2023-03-15T10:30:00Z",
   "lastLogin": "2023-04-01T14:25:00Z",
   "status": "ACTIVE"
+} 
+```
+- **Remove Profile Picture**: To remove a profile picture, send `null` or an empty string:
+```json
+{
+  "profilePictureUrl": null
 }
 ```
 
@@ -990,6 +998,24 @@ These endpoints require a user with the ADMIN role.
 - **Description**: Deletes a movie
 - **Parameters**: 
   - `id` (path parameter): The ID of the movie to delete
+- **Response**: 204 No Content
+
+#### Delete Comment
+- **URL**: `/api/admin/comments/{commentId}`
+- **Method**: `DELETE`
+- **Authentication**: Admin
+- **Description**: Deletes a single comment by its ID
+- **Parameters**:
+  - `commentId` (path parameter): The ID of the comment to delete
+- **Response**: 204 No Content
+
+#### Delete All Comments From User
+- **URL**: `/api/admin/users/{username}/comments`
+- **Method**: `DELETE`
+- **Authentication**: Admin
+- **Description**: Deletes all comments made by a specific user
+- **Parameters**:
+  - `username` (path parameter): The username of the user whose comments to delete
 - **Response**: 204 No Content
 
 #### Create Actor
@@ -1349,6 +1375,12 @@ Movies now support multiple genres instead of a single genre:
 - Added profile picture URL support for actors and directors
 - Created dedicated endpoints for accessing and updating these fields
 - Added migration script to update the database schema
+
+### Profile Picture Management (v7.0)
+- Added support for removing profile pictures by sending `null` or empty strings to the API
+- Modified backend to consistently handle profile picture removal
+- Updated validation to allow empty values for profile picture URLs
+- Frontend support for profile picture upload and removal
 
 ## API Changes
 

@@ -24,6 +24,7 @@ import ActorDetails from "./pages/ActorDetails";
 import ProfilePage from "./pages/ProfilePage";
 import UserDetails from "./pages/UserDetails";
 import AddEditActor from "./pages/admin/AddEditActor";
+import AdminUsers from "./pages/admin/AdminUsers";
 
 // Temporary components until implemented
 const Unauthorized = () => (
@@ -86,8 +87,11 @@ export const ProtectedRoute = ({
   }
 
   // Check roles if provided and user is authenticated
-  if (keycloak.authenticated && requiredRoles.length > 0 && 
-      !requiredRoles.some((role) => keycloak.hasRealmRole(role))) {
+  if (
+    keycloak.authenticated &&
+    requiredRoles.length > 0 &&
+    !requiredRoles.some((role) => keycloak.hasRealmRole(role))
+  ) {
     return <Navigate to="/unauthorized" replace />;
   }
 
@@ -95,7 +99,7 @@ export const ProtectedRoute = ({
 };
 
 function App() {
-  const { } = useAuth();
+  const {} = useAuth();
 
   return (
     <div className="min-h-screen bg-background pt-16 flex flex-col">
@@ -104,7 +108,8 @@ function App() {
         {/* Public routes - available without authentication */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/movies" element={<MoviesPage />} />
-        <Route path="/movies/:id" element={<MovieDetails />} /> {/* Use our new component */}
+        <Route path="/movies/:id" element={<MovieDetails />} />{" "}
+        {/* Use our new component */}
         <Route path="/directors" element={<DirectorsPage />} />
         <Route path="/directors/:id" element={<DirectorDetails />} />
         <Route path="/actors" element={<ActorsPage />} />
@@ -112,8 +117,6 @@ function App() {
         <Route path="/unauthorized" element={<Unauthorized />} />
         <Route path="/login" element={<Login />} />
         <Route path="/users/:username" element={<UserDetails />} />
-
-
         {/* Movie interaction routes - require authentication */}
         <Route
           path="/movies/:id/rate"
@@ -123,7 +126,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/profile"
           element={
@@ -132,7 +134,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/movies/:id/comment"
           element={
@@ -141,9 +142,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         {/* Admin routes */}
-
         <Route
           path="/admin/*"
           element={
@@ -152,7 +151,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/admin/directors/new"
           element={
@@ -161,7 +159,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-           <Route
+        <Route
           path="/admin/directors/edit/:id"
           element={
             <ProtectedRoute requireAuth requiredRoles={["ADMIN"]}>
@@ -177,7 +175,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-   <Route
+        <Route
           path="/admin/actors/edit/:id"
           element={
             <ProtectedRoute requireAuth requiredRoles={["ADMIN"]}>
@@ -185,7 +183,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/admin/movies/new"
           element={
@@ -194,7 +191,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/admin/movies/edit/:id"
           element={
@@ -203,12 +199,19 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/admin/genres"
           element={
             <ProtectedRoute requireAuth requiredRoles={["ADMIN"]}>
               <ManageGenres />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute requireAuth requiredRoles={["ADMIN"]}>
+              <AdminUsers />
             </ProtectedRoute>
           }
         />

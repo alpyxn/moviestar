@@ -288,38 +288,35 @@ export default function DirectorDetails() {
             </div>
             
             {movies.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {movies.map(movie => (
-                  <Link 
-                    key={movie.id} 
-                    to={`/movies/${movie.id}`}
-                    className="group"
-                  >
-                    <Card className="overflow-hidden h-full hover:shadow-md transition-all">
+                  <Card key={movie.id} className="overflow-hidden flex flex-col h-full hover:shadow-lg transition-shadow">
+                    <Link 
+                      to={`/movies/${movie.id}`}
+                      className="group h-full"
+                    >
                       <div className="aspect-[2/3] relative">
                         <img 
                           src={movie.posterURL || '/placeholder-poster.jpg'} 
                           alt={movie.title} 
                           className="w-full h-full object-cover"
+                          loading="lazy"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.onerror = null;
+                            target.src = '/placeholder-poster.jpg';
+                          }}
                         />
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-3">
-                          <h3 className="text-white font-bold group-hover:text-rose-300 transition-colors">
+                          <h3 className="text-white font-bold text-base">
                             {movie.title}
                           </h3>
-                          <p className="text-white text-sm opacity-80">{movie.year}</p>
+                          <p className="text-white text-xs opacity-90">{movie.year}</p>
                         </div>
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200"></div>
                       </div>
-                      <CardContent className="p-3">
-                        <div className="flex flex-wrap gap-1">
-                          {movie.genres && movie.genres.slice(0, 3).map((genre: { id: number; genre: string }) => (
-                            <Badge key={genre.id} variant="outline" className="text-xs">
-                              {genre.genre}
-                            </Badge>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
+                    </Link>
+                  </Card>
                 ))}
               </div>
             ) : (

@@ -1,5 +1,6 @@
 import { getAuthApiClient /* , publicApiClient */ } from './apiClient';
 import { User, WatchlistItem, Comment } from './apiService';
+import axios from 'axios';
 
 const userApi = {
   /**
@@ -48,11 +49,32 @@ const userApi = {
   /**
    * Update user profile picture
    */
-  updateProfilePicture: async (pictureUrl: string): Promise<User> => {
-    const response = await getAuthApiClient().put<User>('/users/profile/picture', {
-      profilePictureUrl: pictureUrl
-    });
-    return response.data;
+  updateProfilePicture: async (pictureUrl: string | null): Promise<User> => {
+    console.log("userApi.updateProfilePicture called with:", pictureUrl);
+    
+    try {
+      // Send null directly to backend to remove profile picture
+      const payload = { profilePictureUrl: pictureUrl };
+      
+      console.log("Sending profile picture payload:", payload);
+      
+      const response = await getAuthApiClient().put<User>('/users/profile/picture', payload);
+      console.log("Profile picture update response:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("Error in updateProfilePicture:", error);
+      
+      // Add more detailed error logging
+      if (axios.isAxiosError(error) && error.response) {
+        console.error("API error response:", {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data
+        });
+      }
+      
+      throw error;
+    }
   },
 
   /**

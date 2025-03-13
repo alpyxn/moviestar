@@ -231,6 +231,14 @@ const adminApi = {
     await adminClient.delete(`/comments/${id}`);
   },
   
+  /**
+   * Delete all comments from a user
+   * Requires admin authentication
+   */
+  deleteAllUserComments: async (username: string): Promise<void> => {
+    await adminClient.delete(`/users/${username}/comments`);
+  },
+  
   // Users
   getAllUsers: async (): Promise<User[]> => {
     const response = await adminClient.get<User[]>('/users');

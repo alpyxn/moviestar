@@ -58,7 +58,7 @@ public class UserService {
     public UserDTO updateProfilePicture(String username, String profilePictureUrl) {
         UserDTO user = getUserByUsername(username)
             .orElseThrow(() -> new RuntimeException("User not found"));
-        user.setProfilePictureUrl(profilePictureUrl);
+        user.setProfilePictureUrl(profilePictureUrl == null || profilePictureUrl.isEmpty() ? null : profilePictureUrl);
         return userRepository.save(user);
     }
 

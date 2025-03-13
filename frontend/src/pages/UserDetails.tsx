@@ -55,9 +55,11 @@ export default function UserDetails() {
   const [isBanning, setIsBanning] = useState(false);
   const [showBanDialog, setShowBanDialog] = useState(false);
   const [showDeleteCommentDialog, setShowDeleteCommentDialog] = useState(false);
+  const [showDeleteAllCommentsDialog, setShowDeleteAllCommentsDialog] = useState(false);
   const [selectedCommentId, setSelectedCommentId] = useState<number | null>(null);
   const [notesForDeveloper, setNotesForDeveloper] = useState<string[]>([]);
   const [movieTitles, setMovieTitles] = useState<Record<number, string>>({});
+  const [isDeletingAllComments, setIsDeletingAllComments] = useState(false);
   
   const { toast } = useToast();
   const { keycloak } = useKeycloak();
@@ -287,6 +289,47 @@ export default function UserDetails() {
     }
   };
 
+  // Admin: Delete all comments for a user
+  const handleDeleteAllComments = async () => {
+    if (!username || !isAdmin) return;
+    
+    setIsDeletingAllComments(true);
+    try {
+      // Ensure token is fresh before making admin requests
+      if (keycloak.authenticated) {
+        try {
+          await keycloak.updateToken(30);
+        } catch (refreshError) {
+          console.error("Token refresh failed:", refreshError);
+          toast({
+            title: 'Authentication Error',
+            description: 'Please login again to continue',
+            variant: 'destructive',
+          });
+          keycloak.login();
+          return;
+        }
+      }
+      
+      await adminApi.deleteAllUserComments(username);
+      // Clear all comments from local state
+      setUserComments([]);
+      toast({
+        title: 'Comments Deleted',
+        description: `All comments from ${username} have been removed`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Delete Failed',
+        description: 'Failed to delete all comments',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeletingAllComments(false);
+      setShowDeleteAllCommentsDialog(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-[70vh]">
@@ -309,13 +352,13 @@ export default function UserDetails() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
         {/* User Profile Card - Left Side */}
         <div className="lg:col-span-1">
           <Card>
-            <CardHeader className={`text-center ${user.status === 'BANNED' ? 'bg-red-50' : 'bg-muted'}`}>
+            <CardHeader className={`text-center ${user.status === 'BANNED' ? 'bg-red-50 dark:bg-red-900/20' : 'bg-muted'}`}>
               <div className="flex flex-col items-center">
-                <Avatar className="h-24 w-24 mb-4">
+                <Avatar className="h-20 w-20 md:h-24 md:w-24 mb-4">
                   {user.profilePictureUrl ? (
                     <img 
                       src={user.profilePictureUrl} 
@@ -333,8 +376,8 @@ export default function UserDetails() {
                     </AvatarFallback>
                   )}
                 </Avatar>
-                <CardTitle className="text-2xl">{user.username}</CardTitle>
-                {user.email && <CardDescription>{user.email}</CardDescription>}
+                <CardTitle className="text-xl md:text-2xl break-all">{user.username}</CardTitle>
+                {user.email && <CardDescription className="break-all">{user.email}</CardDescription>}
                 
                 {user.status && (
                   <Badge 
@@ -394,35 +437,28 @@ export default function UserDetails() {
                   </div>
                 </div>
                 
-                {user.status === 'BANNED' ? (
-                  <Button 
-                    onClick={() => setShowBanDialog(true)} 
-                    variant="outline" 
-                    className="w-full border-green-300 text-green-700 hover:bg-green-50"
-                    disabled={isBanning}
-                  >
-                    {isBanning ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : (
+                {/* Responsive button layout */}
+                <Button 
+                  onClick={() => setShowBanDialog(true)} 
+                  variant="outline" 
+                  className={`w-full ${
+                    user.status === 'BANNED' 
+                      ? 'border-green-300 text-green-700 hover:bg-green-50 dark:border-green-700 dark:text-green-400 dark:hover:bg-green-950/30'
+                      : 'border-red-300 text-red-700 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-950/30'
+                  }`}
+                  disabled={isBanning}
+                >
+                  {isBanning ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    user.status === 'BANNED' ? (
                       <CheckCircle className="h-4 w-4 mr-2" />
-                    )}
-                    Unban User
-                  </Button>
-                ) : (
-                  <Button 
-                    onClick={() => setShowBanDialog(true)} 
-                    variant="outline" 
-                    className="w-full border-red-300 text-red-700 hover:bg-red-50"
-                    disabled={isBanning}
-                  >
-                    {isBanning ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     ) : (
                       <Ban className="h-4 w-4 mr-2" />
-                    )}
-                    Ban User
-                  </Button>
-                )}
+                    )
+                  )}
+                  {user.status === 'BANNED' ? 'Unban User' : 'Ban User'}
+                </Button>
               </CardFooter>
             )}
           </Card>
@@ -449,8 +485,8 @@ export default function UserDetails() {
         
         {/* Tabbed Content - Right Side */}
         <div className="lg:col-span-3">
-          <Tabs defaultValue="comments">
-            <TabsList className="w-full grid grid-cols-2">
+          <Tabs defaultValue="comments" className="w-full">
+            <TabsList className="w-full grid grid-cols-2 mb-4">
               <TabsTrigger value="comments">Comments</TabsTrigger>
               <TabsTrigger value="watchlist">Watchlist</TabsTrigger>
             </TabsList>
@@ -459,11 +495,27 @@ export default function UserDetails() {
             <TabsContent value="comments">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
+                  <CardTitle className="flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center gap-2">
                       <MessageSquare className="h-5 w-5" />
-                      <span>{user.username}'s Comments</span>
+                      <span className="break-all">{user.username}'s Comments</span>
                     </div>
+                    {isAdmin && userComments.length > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200"
+                        onClick={() => setShowDeleteAllCommentsDialog(true)}
+                        disabled={isDeletingAllComments}
+                      >
+                        {isDeletingAllComments ? (
+                          <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-3.5 w-3.5 mr-2" />
+                        )}
+                        Delete All Comments
+                      </Button>
+                    )}
                   </CardTitle>
                   <CardDescription>
                     Comments this user has made on movies
@@ -479,45 +531,20 @@ export default function UserDetails() {
                       {userComments.map(comment => (
                         <Card key={comment.id} className="border border-muted">
                           <CardHeader className="p-3 pb-1">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <Link to={`/movies/${comment.movieId}`} className="text-sm font-medium hover:underline">
-                                  {movieTitles[comment.movieId] || `Movie #${comment.movieId}`}
-                                </Link>
-                                <p className="text-xs text-muted-foreground">
-                                  {formatDate(comment.createdAt)}
-                                  {comment.updatedAt && ` (edited ${formatDate(comment.updatedAt)})`}
-                                </p>
-                              </div>
+                            <div className="flex justify-between items-start gap-2 flex-wrap">
+                              <Link to={`/movies/${comment.movieId}`} className="text-sm font-medium hover:underline line-clamp-2">
+                                {movieTitles[comment.movieId] || `Movie #${comment.movieId}`}
+                              </Link>
                               
-                              {isAdmin && (
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        className="h-8 w-8 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                        onClick={() => {
-                                          setSelectedCommentId(comment.id);
-                                          setShowDeleteCommentDialog(true);
-                                        }}
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>Delete comment</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              )}
+                              <div className="flex flex-shrink-0 text-xs text-muted-foreground">
+                                {formatDate(comment.createdAt)}
+                              </div>
                             </div>
                           </CardHeader>
-                          <CardContent className="p-3 pt-1">
-                            <p>{comment.comment}</p>
+                          <CardContent className="p-3 pt-2">
+                            <p className="break-words">{comment.comment}</p>
                           </CardContent>
-                          <CardFooter className="p-3 pt-1 text-xs text-muted-foreground">
+                          <CardFooter className="p-3 pt-1 flex justify-between flex-wrap gap-2">
                             <div className="flex gap-3">
                               <span className="flex items-center">
                                 👍 {comment.likesCount}
@@ -526,6 +553,21 @@ export default function UserDetails() {
                                 👎 {comment.dislikesCount}
                               </span>
                             </div>
+                            
+                            {isAdmin && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                onClick={() => {
+                                  setSelectedCommentId(comment.id);
+                                  setShowDeleteCommentDialog(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                <span className="text-xs">Delete</span>
+                              </Button>
+                            )}
                           </CardFooter>
                         </Card>
                       ))}
@@ -552,7 +594,7 @@ export default function UserDetails() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Film className="h-5 w-5" />
-                    <span>{user.username}'s Watchlist</span>
+                    <span className="break-all">{user.username}'s Watchlist</span>
                   </CardTitle>
                   <CardDescription>
                     Movies this user has added to their watchlist
@@ -564,36 +606,33 @@ export default function UserDetails() {
                       <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                     </div>
                   ) : userWatchlist.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
                       {userWatchlist.map(item => {
                         // Check if the item is directly a movie or has a nested movie property
                         const movie = item.movie || item;
                         
                         return (
-                          <Card key={item.id || movie.id} className="overflow-hidden">
-                            <div className="aspect-[2/3] relative">
-                              <img 
-                                src={movie.posterURL || '/placeholder-poster.jpg'} 
-                                alt={`${movie.title || 'Movie'} poster`}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.onerror = null;
-                                  target.src = '/placeholder-poster.jpg';
-                                }}
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent flex items-end p-4">
-                                <div>
-                                  <h3 className="text-white font-bold text-lg">{movie.title || 'Untitled'}</h3>
-                                  <p className="text-white text-sm opacity-90">{movie.year || 'N/A'}</p>
+                          <Card key={item.id || movie.id} className="overflow-hidden flex flex-col h-full hover:shadow-lg transition-shadow">
+                            <Link to={`/movies/${movie.id}`} className="group h-full">
+                              <div className="aspect-[2/3] relative">
+                                <img 
+                                  src={movie.posterURL || '/placeholder-poster.jpg'} 
+                                  alt={`${movie.title || 'Movie'} poster`}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.onerror = null;
+                                    target.src = '/placeholder-poster.jpg';
+                                  }}
+                                />
+                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-3">
+                                  <h3 className="text-white font-bold text-base">{movie.title || 'Untitled'}</h3>
+                                  <p className="text-white text-xs opacity-90">{movie.year || 'N/A'}</p>
                                 </div>
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200"></div>
                               </div>
-                            </div>
-                            <CardFooter className="p-4">
-                              <Button variant="default" size="sm" asChild className="w-full">
-                                <Link to={`/movies/${movie.id}`}>View Details</Link>
-                              </Button>
-                            </CardFooter>
+                            </Link>
                           </Card>
                         );
                       })}
@@ -659,6 +698,27 @@ export default function UserDetails() {
               className="bg-red-600 hover:bg-red-700"
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete All Comments Dialog */}
+      <AlertDialog open={showDeleteAllCommentsDialog} onOpenChange={setShowDeleteAllCommentsDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete All Comments</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete all comments from {user?.username}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteAllComments}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete All
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

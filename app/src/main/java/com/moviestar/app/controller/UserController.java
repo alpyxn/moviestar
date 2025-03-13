@@ -42,6 +42,8 @@ public class UserController {
             username = jwt.getSubject();
         }
         
+        // Pass the profilePictureUrl directly to the service
+        // The service will handle empty strings or nulls
         UserDTO user = userService.updateProfilePicture(username, request.getProfilePictureUrl());
         return ResponseEntity.ok(userService.convertToResponse(user));
     }

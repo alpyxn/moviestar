@@ -64,7 +64,7 @@ class CommentServiceTest {
 
         verify(commentRepository).save(commentDTO);
     }
-    
+
     @Test
     void likeComment_NewLike() {
         CommentDTO comment = createCommentDTO(1L, "Great movie!", "user1", LocalDateTime.now(), 0, 0);
@@ -263,7 +263,7 @@ class CommentServiceTest {
         
         verify(commentRepository, never()).save(any(CommentDTO.class));
     }
-    
+
     @Test
     void deleteComment_SuccessfulDeletion() {
         Long commentId = 1L;
@@ -360,6 +360,60 @@ class CommentServiceTest {
         // Verify that both repository methods were called with the correct parameters
         verify(commentLikeRepository).deleteByCommentId(commentId);
         verify(commentRepository).deleteById(commentId);
+    }
+
+    @Test
+    void deleteAllUserComments() {
+        // Create test data - list of comments for a specific user
+        String username = "testuser";
+        List<CommentDTO> userComments = Arrays.asList(
+            createCommentDTO(1L, "First comment to delete", username, LocalDateTime.now(), 5, 2),
+            createCommentDTO(2L, "Second comment to delete", username, LocalDateTime.now(), 3, 1)
+        );
+        
+        // Mock repository behavior
+        when(commentRepository.findByUsernameOrderByCreatedAtDesc(username)).thenReturn(userComments);
+        doNothing().when(commentLikeRepository).deleteByCommentId(anyLong());
+        doNothing().when(commentRepository).deleteById(anyLong());
+        
+        // Call the service method
+        assertDoesNotThrow(() -> {
+            commentService.deleteAllUserComments(username);
+        });
+        
+        // Verify that repository methods were called with the correct parameters
+        verify(commentRepository).findByUsernameOrderByCreatedAtDesc(username);
+        verify(commentLikeRepository).deleteByCommentId(1L);
+        verify(commentLikeRepository).deleteByCommentId(2L);
+        verify(commentRepository).deleteById(1L);
+        verify(commentRepository).deleteById(2L);
+    }
+
+    @Test
+    void deleteAllUserComments_HandlesExceptions() {
+        String username = "testuser";
+        List<CommentDTO> userComments = Arrays.asList(
+            createCommentDTO(1L, "Comment", username, LocalDateTime.now(), 5, 2),
+            createCommentDTO(2L, "Comment with error", username, LocalDateTime.now(), 3, 1)
+        );
+        
+        when(commentRepository.findByUsernameOrderByCreatedAtDesc(username)).thenReturn(userComments);
+        doNothing().when(commentLikeRepository).deleteByCommentId(1L);
+        doThrow(new RuntimeException("Test exception")).when(commentLikeRepository).deleteByCommentId(2L);
+        
+        // The method should throw a RuntimeException with a descriptive message
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            commentService.deleteAllUserComments(username);
+        });
+        
+        // Verify the exception message includes the username
+        assertTrue(exception.getMessage().contains(username));
+        assertTrue(exception.getMessage().contains("Failed to delete all comments"));
+        
+        // Verify the repository methods were called correctly
+        verify(commentRepository).findByUsernameOrderByCreatedAtDesc(username);
+        verify(commentLikeRepository).deleteByCommentId(1L);
+        verify(commentLikeRepository).deleteByCommentId(2L);
     }
 
     private CommentDTO createCommentDTO(Long id, String comment, String username, LocalDateTime createdAt, 
