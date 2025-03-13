@@ -1,0 +1,2 @@
+
+ALTER TABLE Movie ADD COLUMN total_ratings INTEGER DEFAULT 0;
