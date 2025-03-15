@@ -32,22 +32,16 @@ public class WatchlistService {
                         if (movieOptional.isPresent()) {
                             return movieService.convertToResponse(movieOptional.get());
                         } else {
-                            // Skip movies that no longer exist
                             return null;
                         }
                     } catch (Exception e) {
-                        // Catch any exceptions that might occur and skip this movie
                         return null;
                     }
                 })
-                .filter(movie -> movie != null) // Filter out null entries (movies that weren't found)
+                .filter(movie -> movie != null) 
                 .collect(Collectors.toList());
     }
     
-    /**
-     * Get another user's watchlist by their username
-     * This is a public endpoint for viewing other users' watchlists
-     */
     public List<MovieResponse> getPublicUserWatchlist(String username) {
         List<WatchlistItemDTO> watchlistItems = watchlistRepository.findByUsername(username);
         

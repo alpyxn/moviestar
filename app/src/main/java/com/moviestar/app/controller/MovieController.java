@@ -122,9 +122,6 @@ public class MovieController {
         });
     }
 
-    /**
-     * Update a comment (for comment author only)
-     */
     @PutMapping("/comments/{commentId}")
     public ResponseEntity<CommentResponse> updateComment(
             @RequestBody @Valid CommentRequest request,
@@ -139,9 +136,6 @@ public class MovieController {
         }
     }
 
-    /**
-     * Delete a comment (for comment author only)
-     */
     @DeleteMapping("/comments/{commentId}")
     public ResponseEntity<Void> deleteComment(
             @PathVariable Long commentId,
@@ -198,12 +192,10 @@ public class MovieController {
         String username = jwt.getClaimAsString("preferred_username");
         List<RatingDTO> ratings = ratingService.getUserRatings(username);
         
-        // Convert ratings to response objects with movie details
         List<Map<String, Object>> response = ratings.stream()
             .map(rating -> {
                 Map<String, Object> ratingMap = new HashMap<>();
                 try {
-                    // Get movie details for each rating
                     MovieResponse movie = movieService.convertToResponse(
                         movieService.getMovieById(rating.getMovieId())
                     );
@@ -213,7 +205,6 @@ public class MovieController {
                     ratingMap.put("rating", rating.getRating());
                     ratingMap.put("movie", movie);
                 } catch (Exception e) {
-                    // If movie isn't found, return just the rating info
                     ratingMap.put("id", rating.getId());
                     ratingMap.put("movieId", rating.getMovieId());
                     ratingMap.put("rating", rating.getRating());
@@ -224,5 +215,12 @@ public class MovieController {
             .collect(Collectors.toList());
         
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/random")
+    public ResponseEntity<List<MovieResponse>> getRandomizedMovies() {
+        return ResponseEntity.ok(movieService.getRandomizedMovies().stream()
+                .map(movieService::convertToResponse)
+                .collect(Collectors.toList()));
     }
 }

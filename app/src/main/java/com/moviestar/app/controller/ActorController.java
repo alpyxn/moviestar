@@ -52,9 +52,6 @@ public class ActorController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Get all movies an actor has appeared in
-     */
     @GetMapping("/{id}/movies")
     public ResponseEntity<List<MovieResponse>> getActorMovies(@PathVariable Long id) {
         List<MovieDTO> movies = actorService.getActorMovies(id);

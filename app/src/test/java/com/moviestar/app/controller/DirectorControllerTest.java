@@ -46,7 +46,6 @@ public class DirectorControllerTest {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         Date birthDay = dateFormat.parse("1965-05-15");
 
-        // Instead of using the builder pattern, create the object directly
         DirectorResponse directorResponse = new DirectorResponse(
             1L,
             "Steven",
@@ -79,7 +78,6 @@ public class DirectorControllerTest {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         Date birthDay = dateFormat.parse("1965-05-15");
 
-        // Instead of using the builder pattern, create the object directly
         DirectorResponse directorResponse = new DirectorResponse(
             1L,
             "Steven",
@@ -103,13 +101,11 @@ public class DirectorControllerTest {
                 .andExpect(jsonPath("$.pictureUrl").value("http://example.com/spielberg.jpg"));
     }
 
-    // Same fix for the other tests...
     @Test
     void searchDirectors() throws Exception {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         Date birthDay = dateFormat.parse("1965-05-15");
 
-        // Instead of using the builder pattern, create the object directly
         DirectorResponse directorResponse = new DirectorResponse(
             1L,
             "Steven",
@@ -136,7 +132,6 @@ public class DirectorControllerTest {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         Date birthDay = dateFormat.parse("1965-05-15");
 
-        // Instead of using the builder pattern, create the object directly
         DirectorResponse directorResponse = new DirectorResponse(
             1L,
             "Steven",
@@ -161,7 +156,6 @@ public class DirectorControllerTest {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         Date birthDay = dateFormat.parse("1965-05-15");
 
-        // Instead of using the builder pattern, create the object directly
         DirectorResponse directorResponse = new DirectorResponse(
             1L,
             "Steven",

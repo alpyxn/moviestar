@@ -241,7 +241,6 @@ class CommentServiceTest {
         
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(originalCommentDTO));
         
-        // The service throws RuntimeException, not IllegalAccessException
         assertThrows(RuntimeException.class, () -> {
             commentService.updateComment(commentId, attemptingUser, updatedText);
         });
@@ -279,7 +278,6 @@ class CommentServiceTest {
             commentService.deleteUserComment(commentId, username);
         });
         
-        // Update to verify deleteById instead of delete
         verify(commentRepository).deleteById(commentId);
     }
     
@@ -294,7 +292,6 @@ class CommentServiceTest {
         
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(commentDTO));
         
-        // The service should throw an exception when a user tries to delete someone else's comment
         assertThrows(RuntimeException.class, () -> {
             commentService.deleteUserComment(commentId, attemptingUser);
         });
@@ -332,17 +329,14 @@ class CommentServiceTest {
                 .collect(Collectors.toList())
         );
 
-        // Call the service method
         List<CommentResponse> result = commentService.getCommentsByUsername("testuser");
 
-        // Verify the results
         assertEquals(2, result.size());
         assertEquals("Second comment", result.get(0).getComment());
         assertEquals("First comment", result.get(1).getComment());
         assertEquals("testuser", result.get(0).getUsername());
         assertEquals("testuser", result.get(1).getUsername());
         
-        // Verify the repository method was called with correct parameters
         verify(commentRepository).findByUsernameOrderByCreatedAtDesc("testuser");
     }
 
@@ -350,38 +344,31 @@ class CommentServiceTest {
     void deleteComment() {
         Long commentId = 1L;
         
-        // Mock repository behavior
         doNothing().when(commentLikeRepository).deleteByCommentId(commentId);
         doNothing().when(commentRepository).deleteById(commentId);
         
-        // Call the service method
         commentService.deleteComment(commentId);
         
-        // Verify that both repository methods were called with the correct parameters
         verify(commentLikeRepository).deleteByCommentId(commentId);
         verify(commentRepository).deleteById(commentId);
     }
 
     @Test
     void deleteAllUserComments() {
-        // Create test data - list of comments for a specific user
         String username = "testuser";
         List<CommentDTO> userComments = Arrays.asList(
             createCommentDTO(1L, "First comment to delete", username, LocalDateTime.now(), 5, 2),
             createCommentDTO(2L, "Second comment to delete", username, LocalDateTime.now(), 3, 1)
         );
         
-        // Mock repository behavior
         when(commentRepository.findByUsernameOrderByCreatedAtDesc(username)).thenReturn(userComments);
         doNothing().when(commentLikeRepository).deleteByCommentId(anyLong());
         doNothing().when(commentRepository).deleteById(anyLong());
         
-        // Call the service method
         assertDoesNotThrow(() -> {
             commentService.deleteAllUserComments(username);
         });
         
-        // Verify that repository methods were called with the correct parameters
         verify(commentRepository).findByUsernameOrderByCreatedAtDesc(username);
         verify(commentLikeRepository).deleteByCommentId(1L);
         verify(commentLikeRepository).deleteByCommentId(2L);
@@ -401,16 +388,13 @@ class CommentServiceTest {
         doNothing().when(commentLikeRepository).deleteByCommentId(1L);
         doThrow(new RuntimeException("Test exception")).when(commentLikeRepository).deleteByCommentId(2L);
         
-        // The method should throw a RuntimeException with a descriptive message
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
             commentService.deleteAllUserComments(username);
         });
         
-        // Verify the exception message includes the username
         assertTrue(exception.getMessage().contains(username));
         assertTrue(exception.getMessage().contains("Failed to delete all comments"));
         
-        // Verify the repository methods were called correctly
         verify(commentRepository).findByUsernameOrderByCreatedAtDesc(username);
         verify(commentLikeRepository).deleteByCommentId(1L);
         verify(commentLikeRepository).deleteByCommentId(2L);

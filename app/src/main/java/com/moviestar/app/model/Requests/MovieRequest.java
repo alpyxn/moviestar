@@ -38,7 +38,6 @@ public class MovieRequest {
         this.genreIds = genreIds;
     }
     
-    // Add getters and setters for directorIds
     public List<Long> getDirectorIds() {
         return directorIds;
     }

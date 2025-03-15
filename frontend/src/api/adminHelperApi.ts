@@ -35,13 +35,9 @@ const refreshKeycloakToken = async (): Promise<string> => {
   isRefreshing = true;
 
   try {
-    console.log('Attempting to refresh token...');
-    const refreshed = await keycloak.updateToken(5);
-    
-    console.log('Token refresh result:', refreshed ? 'refreshed' : 'not needed');
+    await keycloak.updateToken(5);
     
     if (keycloak.isTokenExpired()) {
-      console.error('Token still expired after refresh attempt');
       throw new Error('Token refresh failed');
     }
     
@@ -49,7 +45,6 @@ const refreshKeycloakToken = async (): Promise<string> => {
     processQueue(null, token);
     return token;
   } catch (error) {
-    console.error('Token refresh failed, redirecting to login:', error);
     processQueue(error);
     keycloak.login();
     throw error;
@@ -109,7 +104,6 @@ const adminHelperApi = {
       const response = await adminAxios.get<Genre[]>('/admin/genres');
       return response.data;
     } catch (error) {
-      console.error('Error fetching genres:', error);
       return [];
     }
   },
@@ -119,7 +113,6 @@ const adminHelperApi = {
       const response = await adminAxios.get<Actor[]>('/admin/actors');
       return response.data;
     } catch (error) {
-      console.error('Error fetching actors:', error);
       return [];
     }
   },
@@ -129,7 +122,6 @@ const adminHelperApi = {
       const response = await adminAxios.get<Director[]>('/admin/directors');
       return response.data;
     } catch (error) {
-      console.error('Error fetching directors:', error);
       return [];
     }
   }

@@ -40,8 +40,7 @@ const safeRefreshToken = async (): Promise<string> => {
   isRefreshing = true;
   
   try {
-    const refreshed = await keycloak.updateToken(30);
-    console.log('Token refresh attempt result:', refreshed ? 'refreshed' : 'not needed');
+    await keycloak.updateToken(30);
     
     if (!keycloak.token) {
       throw new Error('No token available after refresh attempt');
@@ -51,7 +50,6 @@ const safeRefreshToken = async (): Promise<string> => {
     processQueue(null, token);
     return token;
   } catch (error) {
-    console.error('Failed to refresh token:', error);
     processQueue(error);
     throw error;
   } finally {
@@ -74,7 +72,6 @@ adminClient.interceptors.request.use(async (config) => {
     }
     return config;
   } catch (error) {
-    console.error('Error in request interceptor:', error);
     return Promise.reject(error);
   }
 });
@@ -102,7 +99,6 @@ adminClient.interceptors.response.use(
           return Promise.reject(new Error('Authentication required'));
         }
       } catch (refreshError) {
-        console.error('Failed to refresh token after 401:', refreshError);
         keycloak.login();
         return Promise.reject(refreshError);
       }
@@ -270,16 +266,11 @@ const adminApi = {
    * Requires admin authentication
    */
   addDirectorToMovie: async (movieId: number, directorId: number): Promise<Movie> => {
-    console.log(`Adding director ${directorId} to movie ${movieId}`);
     try {
       const response = await adminClient.post<Movie>(`/movies/${movieId}/directors/${directorId}`);
-      console.log("Director added successfully, updated movie:", response.data);
       return response.data;
     } catch (error: unknown) {
-      console.error("Error adding director to movie:", error);
       if ((error as any).response) {
-        console.error("Response data:", (error as any).response.data);
-        console.error("Response status:", (error as any).response.status);
       }
       throw error;
     }
@@ -290,16 +281,11 @@ const adminApi = {
    * Requires admin authentication
    */
   removeDirectorFromMovie: async (movieId: number, directorId: number): Promise<Movie> => {
-    console.log(`Removing director ${directorId} from movie ${movieId}`);
     try {
       const response = await adminClient.delete<Movie>(`/movies/${movieId}/directors/${directorId}`);
-      console.log("Director removed successfully, updated movie:", response.data);
       return response.data;
     } catch (error: unknown) {
-      console.error("Error removing director from movie:", error);
       if ((error as any).response) {
-        console.error("Response data:", (error as any).response.data);
-        console.error("Response status:", (error as any).response.status);
       }
       throw error;
     }

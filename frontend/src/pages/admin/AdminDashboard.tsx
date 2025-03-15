@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
-  Film, Users, FileText, Star, 
+  Film, Users, FileText, 
   BarChart2, Settings, Plus 
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -38,7 +38,6 @@ export default function AdminDashboard() {
           try {
             await keycloak.updateToken(30);
           } catch (refreshError) {
-            console.error("Token refresh failed:", refreshError);
             return;
           }
         }
@@ -59,7 +58,6 @@ export default function AdminDashboard() {
           genres: genres.length
         });
       } catch (error) {
-        console.error("Failed to load dashboard data:", error);
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -152,14 +150,11 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <Link to="/admin/movies">
+              <Link to="/movies">
                 <Button variant="outline" className="w-full justify-start">View All Movies</Button>
               </Link>
               <Link to="/admin/movies/new">
                 <Button variant="outline" className="w-full justify-start">Add New Movie</Button>
-              </Link>
-              <Link to="/admin/genres">
-                <Button variant="outline" className="w-full justify-start">Manage Genres</Button>
               </Link>
             </div>
           </CardContent>
@@ -175,14 +170,11 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <Link to="/admin/actors">
+              <Link to="/actors">
                 <Button variant="outline" className="w-full justify-start">View All Actors</Button>
               </Link>
               <Link to="/admin/actors/new">
                 <Button variant="outline" className="w-full justify-start">Add New Actor</Button>
-              </Link>
-              <Link to="/admin/actors/search">
-                <Button variant="outline" className="w-full justify-start">Search Actors</Button>
               </Link>
             </div>
           </CardContent>
@@ -198,14 +190,11 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <Link to="/admin/directors">
+              <Link to="/directors">
                 <Button variant="outline" className="w-full justify-start">View All Directors</Button>
               </Link>
               <Link to="/admin/directors/new">
                 <Button variant="outline" className="w-full justify-start">Add New Director</Button>
-              </Link>
-              <Link to="/admin/directors/search">
-                <Button variant="outline" className="w-full justify-start">Search Directors</Button>
               </Link>
             </div>
           </CardContent>
@@ -222,40 +211,12 @@ export default function AdminDashboard() {
           <CardContent>
             <div className="space-y-3">
               <Link to="/admin/genres">
-                <Button variant="outline" className="w-full justify-start">View All Genres</Button>
-              </Link>
-              <Link to="/admin/genres/new">
-                <Button variant="outline" className="w-full justify-start">Add New Genre</Button>
-              </Link>
-              <Link to="/admin/genres/edit">
-                <Button variant="outline" className="w-full justify-start">Edit Genres</Button>
+                <Button variant="outline" className="w-full justify-start">Manage Genres</Button>
               </Link>
             </div>
           </CardContent>
         </Card>
 
-        {/* Reviews Management */}
-        <Card className="shadow-md hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Star className="h-5 w-5 text-amber-500" />
-              <CardTitle>Reviews Management</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <Link to="/admin/reviews">
-                <Button variant="outline" className="w-full justify-start">View All Reviews</Button>
-              </Link>
-              <Link to="/admin/ratings">
-                <Button variant="outline" className="w-full justify-start">Manage Ratings</Button>
-              </Link>
-              <Link to="/admin/comments">
-                <Button variant="outline" className="w-full justify-start">Moderate Comments</Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Settings */}
         <Card className="shadow-md hover:shadow-lg transition-shadow">
@@ -267,14 +228,8 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <Link to="/admin/settings/system">
-                <Button variant="outline" className="w-full justify-start">System Settings</Button>
-              </Link>
-              <Link to="/admin/settings/appearance">
-                <Button variant="outline" className="w-full justify-start">Appearance</Button>
-              </Link>
-              <Link to="/admin/settings/backup">
-                <Button variant="outline" className="w-full justify-start">Backup & Restore</Button>
+              <Link to="/admin/users">
+                <Button variant="outline" className="w-full justify-start">Manage Users</Button>
               </Link>
             </div>
           </CardContent>

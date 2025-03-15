@@ -191,6 +191,65 @@ public class UserControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    void getUserByUsername_PublicAccess_Found() throws Exception {
+        String username = "testuser";
+        UserDTO user = createUserDTO(1L, username, "test@example.com", UserDTO.UserStatus.ACTIVE);
+        UserResponse userResponse = createUserResponse(username, "test@example.com", "ACTIVE");
+        
+        when(userService.getUserByUsername(username)).thenReturn(Optional.of(user));
+        when(userService.convertToResponse(user)).thenReturn(userResponse);
+
+        mockMvc.perform(get("/api/users/{username}", username)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value(username))
+                .andExpect(jsonPath("$.email").value("test@example.com"))
+                .andExpect(jsonPath("$.status").value("ACTIVE"));
+    }
+
+    @Test
+    void getUserByUsername_PublicAccess_NotFound() throws Exception {
+        String username = "nonexistentuser";
+        when(userService.getUserByUsername(username)).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/users/{username}", username)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getUserByUsername_WithErrorHandling() throws Exception {
+        String username = "problematicuser";
+        when(userService.getUserByUsername(username)).thenThrow(new RuntimeException("Database connection error"));
+
+        mockMvc.perform(get("/api/users/{username}", username)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void getUserByUsernameEndpoint_ShouldBeAccessibleWithoutAuth() throws Exception {
+        
+        String username = "publicuser";
+        UserDTO user = createUserDTO(1L, username, "public@example.com", UserDTO.UserStatus.ACTIVE);
+        UserResponse userResponse = createUserResponse(username, "public@example.com", "ACTIVE");
+        
+        when(userService.getUserByUsername(username)).thenReturn(Optional.of(user));
+        when(userService.convertToResponse(user)).thenReturn(userResponse);
+
+        mockMvc.perform(get("/api/users/{username}", username)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value(username))
+                .andExpect(jsonPath("$.email").value("public@example.com"))
+                .andExpect(jsonPath("$.status").value("ACTIVE"));
+    }
+
     private UserDTO createUserDTO(Long id, String username, String email, UserDTO.UserStatus status) {
         UserDTO user = new UserDTO();
         user.setId(id);

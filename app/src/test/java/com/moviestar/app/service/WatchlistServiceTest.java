@@ -193,9 +193,7 @@ public class WatchlistServiceTest {
         when(watchlistRepository.findByUsername(username)).thenReturn(Collections.singletonList(item));
         when(movieRepository.findById(999L)).thenReturn(Optional.empty());
 
-        // Need to modify the service to handle this case gracefully instead of throwing exception
         try {
-            // Just test that it doesn't throw an exception
             List<MovieResponse> result = watchlistService.getUserWatchlist(username);
             assertTrue(result.isEmpty());
         } catch (Exception e) {
@@ -209,10 +207,8 @@ public class WatchlistServiceTest {
         String username = "testuser";
         Long movieId = 999L;
         
-        // Even if the movie doesn't exist in the database, we should be able to remove it from watchlist
         doNothing().when(watchlistRepository).deleteByUsernameAndMovieId(username, movieId);
 
-        // This should not throw any exception
         assertDoesNotThrow(() -> {
             watchlistService.removeMovieFromWatchlist(username, movieId);
         });
@@ -220,7 +216,5 @@ public class WatchlistServiceTest {
         verify(watchlistRepository).deleteByUsernameAndMovieId(username, movieId);
     }
     
-    // Remove the tests for getUserWatchlistMovieIds since this method doesn't exist in the service
-    // If you need this functionality, you'll need to implement it in the service first
     
 }

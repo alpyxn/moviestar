@@ -21,11 +21,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -64,21 +60,17 @@ class BannedUserFilterIntegrationTest {
 
     @Test
     void publicEndpoint_ShouldPassFilter() throws Exception {
-        // Setup
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setRequestURI("/api/movies/1");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        // Execute
         bannedUserFilter.doFilterInternal(request, response, filterChain);
 
-        // Verify
         verify(filterChain).doFilter(request, response);
     }
 
     @Test
     void checkAdminEndpoint_WithoutAuthentication_ShouldPassToFilterChain() throws Exception {
-        // Setup
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setRequestURI("/api/admin/users");
         MockHttpServletResponse response = new MockHttpServletResponse();
@@ -86,17 +78,14 @@ class BannedUserFilterIntegrationTest {
         SecurityContextHolder.setContext(securityContext);
         when(securityContext.getAuthentication()).thenReturn(null);
 
-        // Execute
         bannedUserFilter.doFilterInternal(request, response, filterChain);
 
-        // Verify
         verify(filterChain).doFilter(request, response);
         verifyNoInteractions(userService);
     }
 
     @Test
     void checkProtectedEndpoint_WithAuthenticatedActivedUser_ShouldPassToFilterChain() throws Exception {
-        // Setup
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setRequestURI("/api/users/profile");
         MockHttpServletResponse response = new MockHttpServletResponse();
@@ -118,10 +107,8 @@ class BannedUserFilterIntegrationTest {
         when(userService.getUserByUsername("testuser")).thenReturn(Optional.of(activeUser));
         when(userService.createOrUpdateUser(anyString(), anyString(), anyString())).thenReturn(activeUser);
 
-        // Execute
         bannedUserFilter.doFilterInternal(request, response, filterChain);
 
-        // Verify
         verify(filterChain).doFilter(request, response);
         verify(userService).createOrUpdateUser("testuser", "test@example.com", "https://example.com/pic.jpg");
         assertEquals(200, response.getStatus()); // Should pass through without setting error status
@@ -129,7 +116,6 @@ class BannedUserFilterIntegrationTest {
 
     @Test
     void checkProtectedEndpoint_WithAuthenticatedBannedUser_ShouldReturnForbidden() throws Exception {
-        // Setup
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setRequestURI("/api/users/profile");
         MockHttpServletResponse response = new MockHttpServletResponse();
@@ -151,10 +137,8 @@ class BannedUserFilterIntegrationTest {
         when(userService.getUserByUsername("banneduser")).thenReturn(Optional.of(bannedUser));
         when(userService.createOrUpdateUser(anyString(), anyString(), anyString())).thenReturn(bannedUser);
 
-        // Execute
         bannedUserFilter.doFilterInternal(request, response, filterChain);
 
-        // Verify - use assertions instead of verify for non-mock objects
         verify(userService).createOrUpdateUser("banneduser", "banned@example.com", "https://example.com/pic.jpg");
         assertEquals(HttpServletResponse.SC_FORBIDDEN, response.getStatus());
         assertEquals("application/json", response.getContentType());
@@ -163,7 +147,6 @@ class BannedUserFilterIntegrationTest {
 
     @Test
     void newUser_ShouldCreateUserAccount() throws Exception {
-        // Setup
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setRequestURI("/api/users/profile");
         MockHttpServletResponse response = new MockHttpServletResponse();
@@ -187,17 +170,14 @@ class BannedUserFilterIntegrationTest {
         when(userService.getUserByUsername("newuser")).thenReturn(Optional.empty());
         when(userService.createOrUpdateUser(anyString(), anyString(), anyString())).thenReturn(newUser);
 
-        // Execute
         bannedUserFilter.doFilterInternal(request, response, filterChain);
 
-        // Verify
         verify(userService).createOrUpdateUser("newuser", "new@example.com", "https://example.com/pic.jpg");
         verify(filterChain).doFilter(request, response);
     }
 
     @Test
     void missingPictureClaim_ShouldHandleNull() throws Exception {
-        // Setup
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setRequestURI("/api/users/profile");
         MockHttpServletResponse response = new MockHttpServletResponse();
@@ -209,8 +189,6 @@ class BannedUserFilterIntegrationTest {
         when(jwt.getClaimAsString("preferred_username")).thenReturn("testuser");
         when(jwt.getClaimAsString("email")).thenReturn("test@example.com");
         when(jwt.hasClaim("picture")).thenReturn(false);
-        // Remove unnecessary stubbing
-        // when(jwt.getClaimAsString("picture")).thenReturn(null);
 
         UserDTO activeUser = new UserDTO();
         activeUser.setUsername("testuser");
@@ -220,11 +198,52 @@ class BannedUserFilterIntegrationTest {
         when(userService.getUserByUsername("testuser")).thenReturn(Optional.of(activeUser));
         when(userService.createOrUpdateUser(anyString(), anyString(), isNull())).thenReturn(activeUser);
 
-        // Execute
         bannedUserFilter.doFilterInternal(request, response, filterChain);
 
-        // Verify
         verify(userService).createOrUpdateUser("testuser", "test@example.com", null);
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    void checkUserProfileEndpoint_WithoutAuthentication_ShouldPass() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/api/users/testuser"); // User profile endpoint
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        SecurityContextHolder.setContext(securityContext);
+        when(securityContext.getAuthentication()).thenReturn(null); // No authentication
+
+        bannedUserFilter.doFilterInternal(request, response, filterChain);
+
+        verify(filterChain).doFilter(request, response);
+    }
+    
+    @Test
+    void checkUserProfileEndpoint_WithAuthentication_ShouldUpdateUser() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/api/users/someotheruser"); // User profile endpoint
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        SecurityContextHolder.setContext(securityContext);
+        when(securityContext.getAuthentication()).thenReturn(jwtAuthenticationToken);
+        when(jwtAuthenticationToken.getToken()).thenReturn(jwt);
+
+        when(jwt.getClaimAsString("preferred_username")).thenReturn("testuser");
+        when(jwt.getClaimAsString("email")).thenReturn("test@example.com");
+        when(jwt.hasClaim("picture")).thenReturn(true);
+        when(jwt.getClaimAsString("picture")).thenReturn("https://example.com/pic.jpg");
+
+        UserDTO activeUser = new UserDTO();
+        activeUser.setUsername("testuser");
+        activeUser.setEmail("test@example.com");
+        activeUser.setStatus(UserDTO.UserStatus.ACTIVE);
+
+        when(userService.getUserByUsername("testuser")).thenReturn(Optional.of(activeUser));
+        when(userService.createOrUpdateUser("testuser", "test@example.com", "https://example.com/pic.jpg")).thenReturn(activeUser);
+
+        bannedUserFilter.doFilterInternal(request, response, filterChain);
+
+        verify(userService).createOrUpdateUser("testuser", "test@example.com", "https://example.com/pic.jpg");
         verify(filterChain).doFilter(request, response);
     }
 }

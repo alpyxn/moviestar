@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useKeycloak } from '@react-keycloak/web';
-import directorsApi from '@/api/directorsApi'; // Changed from adminApi to directorsApi for public access
-import adminApi from '@/api/adminApi'; // Keep for admin operations
+import directorsApi from '@/api/directorsApi'; 
+import adminApi from '@/api/adminApi'; 
 import { Director } from '@/api/apiService';
 import { Loader2, Search, Edit, Trash2, Film, UserPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -37,9 +37,19 @@ import { Badge } from '@/components/ui/badge';
 export default function DirectorsPage() {
   const [directors, setDirectors] = useState<Director[]>([]);
   const [filteredDirectors, setFilteredDirectors] = useState<Director[]>([]);
+  const [displayedDirectors, setDisplayedDirectors] = useState<Director[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [deleteDirectorId, setDeleteDirectorId] = useState<number | null>(null);
+  
+  // Infinite scroll states
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const DIRECTORS_PER_BATCH = 8; // Same as previous pageSize
+  
+  // Ref for infinite scroll observer
+  const observerRef = useRef<HTMLDivElement>(null);
+  
   const { toast } = useToast();
   const navigate = useNavigate();
   const { keycloak, initialized } = useKeycloak();
@@ -59,6 +69,11 @@ export default function DirectorsPage() {
         const data = await directorsApi.getAll();
         if (!isMounted) return;
         setDirectors(data);
+        
+        // Also set filtered and displayed directors immediately 
+        setFilteredDirectors(data);
+        setDisplayedDirectors(data.slice(0, DIRECTORS_PER_BATCH));
+        setHasMore(data.length > DIRECTORS_PER_BATCH);
       } catch (error) {
         console.error('Error fetching directors:', error);
         if (isMounted) {
@@ -80,21 +95,72 @@ export default function DirectorsPage() {
     return () => {
       isMounted = false;
     };
-  }, []); // No dependencies needed
+  }, [toast]); // Add toast as a dependency
 
-  // Filter directors when search term changes
+  // Updated search effect with proper dependencies
   useEffect(() => {
-    if (searchTerm.trim() === '') {
-      setFilteredDirectors(directors);
-    } else {
-      const lowercaseSearch = searchTerm.toLowerCase();
-      const filtered = directors.filter(director => 
+    // Skip this effect when directors array is empty (initial render)
+    if (!directors.length) return;
+    
+    const lowercaseSearch = searchTerm.toLowerCase();
+    let filtered = directors;
+    
+    if (searchTerm.trim() !== '') {
+      filtered = directors.filter(director => 
         `${director.name} ${director.surname}`.toLowerCase().includes(lowercaseSearch) ||
-        director.about?.toLowerCase().includes(lowercaseSearch) // Changed from biography to about
+        director.about?.toLowerCase().includes(lowercaseSearch)
       );
-      setFilteredDirectors(filtered);
     }
+    
+    setFilteredDirectors(filtered);
   }, [searchTerm, directors]);
+  
+  // Separate effect to update displayed directors when filtered directors change
+  useEffect(() => {
+    // Skip if we're still loading the initial data
+    if (loading || !filteredDirectors.length) return;
+    
+    setDisplayedDirectors(filteredDirectors.slice(0, DIRECTORS_PER_BATCH));
+    setHasMore(filteredDirectors.length > DIRECTORS_PER_BATCH);
+  }, [filteredDirectors, loading]);
+  
+  // Set up intersection observer for infinite scroll
+  useEffect(() => {
+    if (!observerRef.current || !hasMore || loadingMore || loading) return;
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+          loadMoreDirectors();
+        }
+      },
+      { threshold: 0.5 }
+    );
+    
+    observer.observe(observerRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, loading, displayedDirectors.length]);
+  
+  // Load more directors function
+  const loadMoreDirectors = useCallback(() => {
+    if (loadingMore || !hasMore) return;
+    
+    setLoadingMore(true);
+    
+    // Short timeout to allow loading indicator to show
+    setTimeout(() => {
+      const currentCount = displayedDirectors.length;
+      const nextBatch = filteredDirectors.slice(currentCount, currentCount + DIRECTORS_PER_BATCH);
+      
+      if (nextBatch.length > 0) {
+        setDisplayedDirectors(prev => [...prev, ...nextBatch]);
+      }
+      
+      // Check if we've displayed all filtered directors
+      setHasMore(currentCount + nextBatch.length < filteredDirectors.length);
+      setLoadingMore(false);
+    }, 300);
+  }, [loadingMore, hasMore, displayedDirectors.length, filteredDirectors]);
 
   const handleDeleteDirector = async (directorId: number) => {
     try {
@@ -138,7 +204,7 @@ export default function DirectorsPage() {
   const getInitials = (director: Director): string => {
     return `${director.name?.charAt(0) || ''}${director.surname?.charAt(0) || ''}`;
   };
-
+  
   // Loading state
   if (loading) {
     return (
@@ -168,7 +234,7 @@ export default function DirectorsPage() {
           {isAdmin && (
             <Button 
               className="bg-rose-600 hover:bg-rose-700 whitespace-nowrap"
-              onClick={() => navigate('/admin/directors/add')}
+              onClick={() => navigate('/admin/directors/new')}
             >
               <UserPlus className="h-4 w-4 mr-2" />
               Add Director
@@ -183,101 +249,120 @@ export default function DirectorsPage() {
           <p className="text-gray-500">Try adjusting your search criteria</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {filteredDirectors.map((director) => (
-            <Card key={director.id} className="overflow-hidden flex flex-col hover:shadow-lg transition-shadow">
-              <CardHeader className="flex flex-col items-center pb-2">
-                <Avatar className="h-32 w-32">
-                  {director.pictureUrl ? ( // Changed from profilePictureURL to pictureUrl
-                    <img 
-                      src={director.pictureUrl} 
-                      alt={`${director.name} ${director.surname}`}
-                      className="object-cover"
-                    />
-                  ) : (
-                    <AvatarFallback className="text-3xl bg-rose-100 text-rose-800">
-                      {getInitials(director)}
-                    </AvatarFallback>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {displayedDirectors.map((director) => (
+              <Card key={director.id} className="overflow-hidden flex flex-col hover:shadow-lg transition-shadow">
+                <CardHeader className="flex flex-col items-center pb-2">
+                  <Avatar className="h-32 w-32">
+                    {director.pictureUrl ? (
+                      <img 
+                        src={director.pictureUrl} 
+                        alt={`${director.name} ${director.surname}`}
+                        className="object-cover"
+                      />
+                    ) : (
+                      <AvatarFallback className="text-3xl bg-rose-100 text-rose-800">
+                        {getInitials(director)}
+                      </AvatarFallback>
+                    )}
+                  </Avatar>
+                  <CardTitle className="mt-4 text-center">
+                    {director.name} {director.surname}
+                  </CardTitle>
+                  {director.birthDay && ( // Changed from birthDate to birthDay to match API
+                    <p className="text-sm text-gray-500">
+                      Born: {new Date(director.birthDay).getFullYear()}
+                      {director.deathDay && ` - Died: ${new Date(director.deathDay).getFullYear()}`} {/* Changed from deathDate to deathDay */}
+                    </p>
                   )}
-                </Avatar>
-                <CardTitle className="mt-4 text-center">
-                  {director.name} {director.surname}
-                </CardTitle>
-                {director.birthDay && ( // Changed from birthDate to birthDay to match API
-                  <p className="text-sm text-gray-500">
-                    Born: {new Date(director.birthDay).getFullYear()}
-                    {director.deathDay && ` - Died: ${new Date(director.deathDay).getFullYear()}`} {/* Changed from deathDate to deathDay */}
-                  </p>
-                )}
-              </CardHeader>
-              
-              <CardContent className="pb-2 flex-grow">
-                {director.about && ( // Changed from biography to about
-                  <p className="text-sm line-clamp-3 text-center">{director.about}</p>
-                )}
+                </CardHeader>
                 
-                {/* Safe check for movies array */}
-                {Array.isArray(director.movies) && director.movies.length > 0 && (
-                  <div className="mt-4">
-                    <h4 className="text-sm font-semibold mb-2 flex items-center">
-                      <Film className="h-3 w-3 mr-1" />
-                      Notable works:
-                    </h4>
-                    <div className="flex flex-wrap gap-1">
-                      {director.movies.slice(0, 3).map(movie => (
-                        <Badge key={movie.id} variant="secondary" className="text-xs">
-                          {movie.title}
-                        </Badge>
-                      ))}
-                      {director.movies.length > 3 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{director.movies.length - 3} more
-                        </Badge>
-                      )}
+                <CardContent className="pb-2 flex-grow">
+                  {director.about && (
+                    <p className="text-sm line-clamp-3 text-center">{director.about}</p>
+                  )}
+                  
+                  {/* Safe check for movies array */}
+                  {Array.isArray(director.movies) && director.movies.length > 0 && (
+                    <div className="mt-4">
+                      <h4 className="text-sm font-semibold mb-2 flex items-center">
+                        <Film className="h-3 w-3 mr-1" />
+                        Notable works:
+                      </h4>
+                      <div className="flex flex-wrap gap-1">
+                        {director.movies.slice(0, 3).map(movie => (
+                          <Badge key={movie.id} variant="secondary" className="text-xs">
+                            {movie.title}
+                          </Badge>
+                        ))}
+                        {director.movies.length > 3 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{director.movies.length - 3} more
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </CardContent>
-              
-              <CardFooter className="pt-2 flex justify-between">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full"
-                  asChild
-                >
-                  <Link to={`/directors/${director.id}`}>View Details</Link>
-                </Button>
+                  )}
+                </CardContent>
                 
-                {isAdmin && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <span className="sr-only">Open menu</span>
-                        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M8.625 2.5C8.625 3.12132 8.12132 3.625 7.5 3.625C6.87868 3.625 6.375 3.12132 6.375 2.5C6.375 1.87868 6.87868 1.375 7.5 1.375C8.12132 1.375 8.625 1.87868 8.625 2.5ZM8.625 7.5C8.625 8.12132 8.12132 8.625 7.5 8.625C6.87868 8.625 6.375 8.12132 6.375 7.5C6.375 6.87868 6.87868 6.375 7.5 6.375C8.12132 6.375 8.625 6.87868 8.625 7.5ZM7.5 13.625C8.12132 13.625 8.625 13.1213 8.625 12.5C8.625 11.8787 8.12132 11.375 7.5 11.375C6.87868 11.375 6.375 11.8787 6.375 12.5C6.375 13.1213 6.87868 13.625 7.5 13.625Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
-                        </svg>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => navigate(`/admin/directors/edit/${director.id}`)}>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        className="text-red-600 focus:text-red-600"
-                        onClick={() => setDeleteDirectorId(director.id)}
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+                <CardFooter className="pt-2 flex justify-between">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full"
+                    asChild
+                  >
+                    <Link to={`/directors/${director.id}`}>View Details</Link>
+                  </Button>
+                  
+                  {isAdmin && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <span className="sr-only">Open menu</span>
+                          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M8.625 2.5C8.625 3.12132 8.12132 3.625 7.5 3.625C6.87868 3.625 6.375 3.12132 6.375 2.5C6.375 1.87868 6.87868 1.375 7.5 1.375C8.12132 1.375 8.625 1.87868 8.625 2.5ZM8.625 7.5C8.625 8.12132 8.12132 8.625 7.5 8.625C6.87868 8.625 6.375 8.12132 6.375 7.5C6.375 6.87868 6.87868 6.375 7.5 6.375C8.12132 6.375 8.625 6.87868 8.625 7.5ZM7.5 13.625C8.12132 13.625 8.625 13.1213 8.625 12.5C8.625 11.8787 8.12132 11.375 7.5 11.375C6.87868 11.375 6.375 11.8787 6.375 12.5C6.375 13.1213 6.87868 13.625 7.5 13.625Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
+                          </svg>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => navigate(`/admin/directors/edit/${director.id}`)}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          className="text-red-600 focus:text-red-600"
+                          onClick={() => setDeleteDirectorId(director.id)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+          
+          {/* Infinite scroll loader */}
+          <div 
+            ref={observerRef} 
+            className="py-6 flex justify-center"
+          >
+            {loadingMore && (
+              <Loader2 className="h-6 w-6 animate-spin text-rose-600" />
+            )}
+            {!hasMore && filteredDirectors.length > DIRECTORS_PER_BATCH && (
+              <p className="text-sm text-muted-foreground">You've seen all directors</p>
+            )}
+          </div>
+          
+          <div className="mt-4 text-sm text-gray-500">
+            Showing {displayedDirectors.length} of {filteredDirectors.length} directors
+          </div>
+        </>
       )}
       
       <AlertDialog open={deleteDirectorId !== null} onOpenChange={() => setDeleteDirectorId(null)}>

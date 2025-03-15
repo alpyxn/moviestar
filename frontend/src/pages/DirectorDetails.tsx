@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -85,14 +85,6 @@ export default function DirectorDetails() {
         }
       } catch (error) {
         console.error('Error fetching director data:', error);
-        
-        if (isMounted) {
-          toast({
-            title: 'Error',
-            description: 'Failed to load director details',
-            variant: 'destructive',
-          });
-        }
       } finally {
         if (isMounted) {
           setLoading(false);

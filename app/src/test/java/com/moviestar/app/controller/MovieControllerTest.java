@@ -58,7 +58,6 @@ public class MovieControllerTest {
     private MockMvc mockMvc;
     private ObjectMapper objectMapper = new ObjectMapper();
     
-    // Custom JWT resolver for testing
     private static class TestJwtArgumentResolver implements HandlerMethodArgumentResolver {
         private final String username;
 
@@ -75,9 +74,7 @@ public class MovieControllerTest {
         @Override
         public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer,
                                      NativeWebRequest webRequest, WebDataBinderFactory binderFactory) {
-            // Create a mock Jwt with minimal configuration for test purposes
             Jwt jwt = mock(Jwt.class);
-            // Use lenient() to avoid UnnecessaryStubbing errors
             lenient().when(jwt.getSubject()).thenReturn(username);
             lenient().when(jwt.getClaimAsString("preferred_username")).thenReturn(username);
             return jwt;
@@ -245,7 +242,6 @@ public class MovieControllerTest {
                 .dislikesCount(0)
                 .build();
 
-        // Update this line to use the new method with the default sorting parameter "newest"
         when(commentService.getCommentsByMovieIdSorted(anyLong(), eq("newest")))
                 .thenReturn(Collections.singletonList(commentResponse));
 
@@ -255,7 +251,6 @@ public class MovieControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].comment").value("Great movie!"));
                 
-        // Verify the correct method is called with the default sorting parameter
         verify(commentService).getCommentsByMovieIdSorted(1L, "newest");
     }
 
@@ -396,5 +391,46 @@ public class MovieControllerTest {
                 .andExpect(jsonPath("$[1].comment").value("Less liked comment"));
                 
         verify(commentService).getCommentsByMovieIdSorted(1L, "likes");
+    }
+
+    @Test
+    void getRandomizedMovies() throws Exception {
+        List<GenreDTO> genreDTOs = Arrays.asList(
+                new GenreDTO(1L, "Action"),
+                new GenreDTO(2L, "Sci-Fi"));
+
+        MovieDTO movieDTO = new MovieDTO();
+        movieDTO.setId(1L);
+        movieDTO.setTitle("The Matrix");
+        movieDTO.setDescription("A sci-fi classic");
+        movieDTO.setYear(1999);
+        movieDTO.setGenres(genreDTOs);
+        movieDTO.setActors(new ArrayList<>());
+        movieDTO.setDirectors(new ArrayList<>());
+        movieDTO.setPosterURL("poster.jpg");
+        movieDTO.setBackdropURL("backdrop.jpg");
+
+        MovieResponse response = MovieResponse.builder()
+                .id(1L)
+                .title("The Matrix")
+                .description("A sci-fi classic")
+                .year(1999)
+                .genres(Collections.emptyList())
+                .actors(Collections.emptyList())
+                .posterURL("poster.jpg")
+                .backdropURL("backdrop.jpg")
+                .averageRating(8.5)
+                .totalRatings(42)
+                .build();
+
+        when(movieService.getRandomizedMovies()).thenReturn(Collections.singletonList(movieDTO));
+        when(movieService.convertToResponse(any(MovieDTO.class))).thenReturn(response);
+
+        mockMvc.perform(get("/api/movies/random")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].title").value("The Matrix"));
     }
 }

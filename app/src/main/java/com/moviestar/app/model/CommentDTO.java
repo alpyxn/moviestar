@@ -41,7 +41,6 @@ public class CommentDTO {
     @Column(name="movie_id", nullable = false)
     private Long movieId;
 
-    // New fields for likes tracking
     @Column(name="likes_count", nullable = false)
     private Integer likesCount = 0;
 

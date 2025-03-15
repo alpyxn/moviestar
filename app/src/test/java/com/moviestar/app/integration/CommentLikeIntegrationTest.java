@@ -26,7 +26,6 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 
 import java.time.LocalDateTime;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -135,7 +134,7 @@ class CommentLikeIntegrationTest {
 
         when(commentService.likeComment(eq(1L), eq("testuser"), eq(false)))
                 .thenReturn(dislikedResponse);
-
+        
         mockMvc.perform(post("/api/movies/comments/1/like")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))

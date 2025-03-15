@@ -16,12 +16,9 @@ public interface RatingRepository extends JpaRepository<RatingDTO, Long> {
 
     long countByMovieId(Long movieId);
     
-    // Find rating by username and movie ID
     Optional<RatingDTO> findByUsernameAndMovieId(String username, Long movieId);
     
-    // Delete rating by username and movie ID
     void deleteByUsernameAndMovieId(String username, Long movieId);
     
-    // Find all ratings by a specific user
     List<RatingDTO> findByUsername(String username);
 }

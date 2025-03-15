@@ -17,7 +17,17 @@ public class UserService {
     private final UserRepository userRepository;
 
     public Optional<UserDTO> getUserByUsername(String username) {
-        return userRepository.findByUsername(username);
+        if (username == null) {
+            return Optional.empty();
+        }
+        
+        Optional<UserDTO> userOpt = userRepository.findByUsername(username);
+        
+        if (userOpt.isEmpty()) {
+            userOpt = userRepository.findByUsernameIgnoreCase(username);
+        }
+        
+        return userOpt;
     }
 
     @Transactional

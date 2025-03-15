@@ -9,12 +9,9 @@ public interface RatingService {
     double getAverageRatingForMovie(Long movieId);
     long getRatingCountForMovie(Long movieId);
     
-    // Get a user's rating for a movie
     Optional<Integer> getUserRatingForMovie(Long movieId, String username);
     
-    // Remove a user's rating for a movie
     void removeRating(Long movieId, String username);
     
-    // Get all ratings by a user
     List<RatingDTO> getUserRatings(String username);
 }

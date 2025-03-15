@@ -180,7 +180,6 @@ class MovieServiceTest {
                 createMovieDTO(1L, "Die Hard"),
                 createMovieDTO(2L, "John Wick")
         );
-        // Update to use the new method name
         when(movieRepository.findByGenresGenre(genre)).thenReturn(movies);
 
         List<MovieDTO> result = movieService.getMoviesByGenre(genre);
@@ -200,6 +199,20 @@ class MovieServiceTest {
                 () -> movieService.createMovie(request)
         );
         assertTrue(exception.getMessage().contains("One or more genres not found"));
+    }
+
+    @Test
+    void getRandomizedMovies() {
+        List<MovieDTO> movies = Arrays.asList(
+            createMovieDTO(1L, "Movie 1"),
+            createMovieDTO(2L, "Movie 2")
+        );
+        when(movieRepository.findAllRandomized()).thenReturn(movies);
+
+        List<MovieDTO> result = movieService.getRandomizedMovies();
+
+        assertEquals(2, result.size());
+        verify(movieRepository).findAllRandomized();
     }
 
     private MovieDTO createMovieDTO(Long id, String title) {

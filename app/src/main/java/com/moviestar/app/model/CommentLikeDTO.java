@@ -31,7 +31,7 @@ public class CommentLikeDTO {
     private String username;
 
     @Column(name = "is_like", nullable = false)
-    private Boolean isLike; // true for like, false for dislike
+    private Boolean isLike; 
 
     @Column(name = "created_at", nullable = false, updatable = false)
     @CreatedDate

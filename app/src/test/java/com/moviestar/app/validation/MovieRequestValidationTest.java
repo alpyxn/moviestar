@@ -44,7 +44,7 @@ class MovieRequestValidationTest {
     @Test
     void emptyTitle_ViolatesConstraint() {
         MovieRequest request = new MovieRequest();
-        request.setTitle("");  // Empty title
+        request.setTitle("");  
         request.setDescription("A thief who steals corporate secrets through dream-sharing technology");
         request.setYear(2010);
         request.setGenreIds(Arrays.asList(1L, 2L));
@@ -59,7 +59,7 @@ class MovieRequestValidationTest {
     @Test
     void nullTitle_ViolatesConstraint() {
         MovieRequest request = new MovieRequest();
-        request.setTitle(null);  // Null title
+        request.setTitle(null);  
         request.setDescription("A thief who steals corporate secrets through dream-sharing technology");
         request.setYear(2010);
         request.setGenreIds(Arrays.asList(1L, 2L));
@@ -74,7 +74,6 @@ class MovieRequestValidationTest {
     @Test
     void tooLongTitle_ViolatesConstraint() {
         MovieRequest request = new MovieRequest();
-        // Create a title with 256 characters (exceeding 255 max)
         StringBuilder longTitle = new StringBuilder();
         for (int i = 0; i < 256; i++) {
             longTitle.append("a");
@@ -96,7 +95,7 @@ class MovieRequestValidationTest {
     void emptyDescription_ViolatesConstraint() {
         MovieRequest request = new MovieRequest();
         request.setTitle("Inception");
-        request.setDescription("");  // Empty description
+        request.setDescription("");  
         request.setYear(2010);
         request.setGenreIds(Arrays.asList(1L, 2L));
         
@@ -112,7 +111,7 @@ class MovieRequestValidationTest {
         MovieRequest request = new MovieRequest();
         request.setTitle("Inception");
         request.setDescription("A thief who steals corporate secrets");
-        request.setYear(null);  // Null year
+        request.setYear(null);  
         request.setGenreIds(Arrays.asList(1L, 2L));
         
         Set<ConstraintViolation<MovieRequest>> violations = validator.validate(request);
@@ -128,7 +127,7 @@ class MovieRequestValidationTest {
         request.setTitle("Inception");
         request.setDescription("A thief who steals corporate secrets");
         request.setYear(2010);
-        request.setGenreIds(Collections.emptyList());  // Empty genre IDs
+        request.setGenreIds(Collections.emptyList());  
         
         Set<ConstraintViolation<MovieRequest>> violations = validator.validate(request);
         
@@ -143,7 +142,7 @@ class MovieRequestValidationTest {
         request.setTitle("Inception");
         request.setDescription("A thief who steals corporate secrets");
         request.setYear(2010);
-        request.setGenreIds(null);  // Null genre IDs
+        request.setGenreIds(null);  
         
         Set<ConstraintViolation<MovieRequest>> violations = validator.validate(request);
         
@@ -159,7 +158,6 @@ class MovieRequestValidationTest {
         request.setDescription("A thief who steals corporate secrets");
         request.setYear(2010);
         request.setGenreIds(Arrays.asList(1L, 2L));
-        // Actor IDs and Director IDs are optional
         request.setActorIds(null);
         request.setDirectorIds(null);
         
@@ -171,10 +169,10 @@ class MovieRequestValidationTest {
     @Test
     void multipleViolations() {
         MovieRequest request = new MovieRequest();
-        request.setTitle("");  // Empty title
-        request.setDescription("");  // Empty description
-        request.setYear(null);  // Null year
-        request.setGenreIds(Collections.emptyList());  // Empty genre IDs
+        request.setTitle("");  
+        request.setDescription("");  
+        request.setYear(null);  
+        request.setGenreIds(Collections.emptyList());  
         
         Set<ConstraintViolation<MovieRequest>> violations = validator.validate(request);
         

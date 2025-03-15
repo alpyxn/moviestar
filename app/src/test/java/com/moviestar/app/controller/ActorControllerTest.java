@@ -45,7 +45,6 @@ public class ActorControllerTest {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         Date birthDay = dateFormat.parse("1990-01-01");
 
-        // Instead of using the builder pattern, create the object directly
         ActorResponse actorResponse = new ActorResponse(
             1L, 
             "John", 
@@ -78,7 +77,6 @@ public class ActorControllerTest {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         Date birthDay = dateFormat.parse("1990-01-01");
 
-        // Instead of using the builder pattern, create the object directly
         ActorResponse actorResponse = new ActorResponse(
             1L, 
             "John", 
@@ -107,7 +105,6 @@ public class ActorControllerTest {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         Date birthDay = dateFormat.parse("1990-01-01");
 
-        // Instead of using the builder pattern, create the object directly
         ActorResponse actorResponse = new ActorResponse(
             1L, 
             "John", 
@@ -132,7 +129,6 @@ public class ActorControllerTest {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         Date birthDay = dateFormat.parse("1990-01-01");
 
-        // Instead of using the builder pattern, create the object directly
         ActorResponse actorResponse = new ActorResponse(
             1L, 
             "John", 

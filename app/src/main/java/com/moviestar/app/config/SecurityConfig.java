@@ -55,6 +55,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/directors/**").permitAll() 
                         .requestMatchers("/api/genres/**").permitAll()
                         .requestMatchers("/api/debug/**").permitAll()
+                        // Fix the pattern syntax - don't use regex in the requestMatchers directly
+                        .requestMatchers("/api/users/{username}").permitAll() 
+                        .requestMatchers("/api/users/*/comments").permitAll() 
+                        .requestMatchers("/api/users/*/watchlist").permitAll() 
                         .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
                         .anyRequest().authenticated()
                 );

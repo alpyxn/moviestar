@@ -19,7 +19,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class DirectorService {
     private final DirectorRepository directorRepository;
-    private final MovieService movieService; // Add this dependency
+    private final MovieService movieService; 
 
     public List<DirectorResponse> getAllDirectors() {
         return directorRepository.findAll().stream()
@@ -90,14 +90,10 @@ public class DirectorService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Get all movies directed by a specific director
-     */
     public List<MovieResponse> getDirectorMovies(Long directorId) {
         DirectorDTO director = directorRepository.findById(directorId)
                 .orElseThrow(() -> new RuntimeException("Director not found"));
         
-        // Convert the list of movies to MovieResponse objects
         return director.getMovies().stream()
                 .map(movieService::convertToResponse)
                 .collect(Collectors.toList());

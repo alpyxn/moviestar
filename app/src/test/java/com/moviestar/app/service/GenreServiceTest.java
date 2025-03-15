@@ -65,7 +65,6 @@ class GenreServiceTest {
     void createGenre() {
         GenreDTO savedGenre = createGenreDTO(1L, "Science Fiction");
         
-        // Create a proper GenreRequest object
         com.moviestar.app.model.Requests.GenreRequest request = new com.moviestar.app.model.Requests.GenreRequest();
         request.setGenre("Science Fiction");
         
@@ -85,7 +84,6 @@ class GenreServiceTest {
         GenreDTO existingGenre = createGenreDTO(genreId, "Action");
         GenreDTO updatedGenre = createGenreDTO(genreId, newGenreName);
         
-        // Create a proper GenreRequest object
         com.moviestar.app.model.Requests.GenreRequest request = new com.moviestar.app.model.Requests.GenreRequest();
         request.setGenre(newGenreName);
         
@@ -104,7 +102,6 @@ class GenreServiceTest {
         Long genreId = 999L;
         String newGenreName = "Fantasy";
         
-        // Create a proper GenreRequest object
         com.moviestar.app.model.Requests.GenreRequest request = new com.moviestar.app.model.Requests.GenreRequest();
         request.setGenre(newGenreName);
         
@@ -118,7 +115,6 @@ class GenreServiceTest {
     void deleteGenre() {
         Long genreId = 1L;
         
-        // Instead of verifying delete(), verify deleteById()
         doNothing().when(genreRepository).deleteById(genreId);
 
         assertDoesNotThrow(() -> genreService.deleteGenre(genreId));
@@ -129,7 +125,6 @@ class GenreServiceTest {
     void deleteGenre_NotFound() {
         Long genreId = 999L;
         
-        // Properly simulate the exception that would be thrown by JPA
         doThrow(new RuntimeException("Genre not found")).when(genreRepository).deleteById(genreId);
         
         assertThrows(RuntimeException.class, () -> genreService.deleteGenre(genreId));
@@ -140,11 +135,8 @@ class GenreServiceTest {
     void findByGenre() {
         String genreName = "Action";
         
-        // Instead of using findByGenreIgnoreCase which doesn't exist,
-        // let's use existsByGenre which is shown in the repository
         when(genreRepository.existsByGenre(genreName)).thenReturn(true);
 
-        // Test if the genre exists
         boolean result = genreRepository.existsByGenre(genreName);
 
         assertTrue(result);
@@ -154,10 +146,8 @@ class GenreServiceTest {
     void findByGenre_NotFound() {
         String genreName = "NonexistentGenre";
         
-        // Using existsByGenre which is available in the repository
         when(genreRepository.existsByGenre(genreName)).thenReturn(false);
 
-        // Test if the genre exists
         boolean result = genreRepository.existsByGenre(genreName);
 
         assertFalse(result);

@@ -26,6 +26,52 @@ The system identifies users by the `preferred_username` claim from the Keycloak 
 - All user-specific actions (comments, ratings, etc.) are linked to this username
 - If changing a username in Keycloak, the user will be treated as a new user in the system
 
+## User Profiles
+
+User profiles can be accessed publicly using the `/api/users/{username}` endpoint without authentication. This allows non-logged-in users to view user profiles. The backend implements case-insensitive username matching to improve user lookups.
+
+If the user exists in the database, the endpoint returns a 200 OK response with the user details. If not found, it returns a 404 Not Found response.
+
+## Public Endpoints
+
+The following endpoints are accessible without authentication:
+- `/api/movies/**` - All movie-related endpoints (except comments and ratings)
+- `/api/actors/**` - All actor endpoints
+- `/api/directors/**` - All director endpoints
+- `/api/genres/**` - All genre endpoints
+- `/api/users/{username}` - Public user profile information
+- `/api/users/{username}/comments` - Public user comments
+- `/api/users/{username}/watchlist` - Public user watchlist
+
+## User Management
+
+### User Profile Creation
+- User profiles are automatically created when a user logs in for the first time
+- Profile information is pulled from the Keycloak token
+- The system tracks username, email, profile picture URL, created date, and last login
+
+### User Profile Updates
+- The system updates the user's last login timestamp on each authenticated request
+- Users can update their profile picture using the API
+- Send `null` or empty string to remove the profile picture
+
+### User Banning
+- Admins can ban users through the admin API
+- Banned users receive a 403 Forbidden response on any authenticated request
+- Banned status is visible on user profiles
+
+## Error Handling
+
+The API has improved error handling, particularly for user lookups:
+- 404 Not Found for non-existent resources
+- Case-insensitive username matching improves user discovery
+- 500 Internal Server Error details are logged for debugging
+
+## Testing and Development
+
+The system includes a debug controller (only enabled in dev/test profiles) to help with user lookup issues:
+- `/api/debug/users/search?username=value` - Returns detailed lookup information
+
 ## Data Models
 
 ### Movie
@@ -190,6 +236,14 @@ The system identifies users by the `preferred_username` claim from the Keycloak 
   }
 ]
 ```
+
+#### Get Randomized Movies
+- **URL**: `/api/movies/random`
+- **Method**: `GET`
+- **Authentication**: Public
+- **Description**: Retrieves a list of all movies in random order
+- **Response**: 200 OK (Same structure as "Get All Movies" endpoint)
+- **Performance Note**: This endpoint uses database-level randomization, which is more efficient than client-side shuffling for large datasets
 
 #### Get Movie by ID
 - **URL**: `/api/movies/{id}`
@@ -814,6 +868,7 @@ The system identifies users by the `preferred_username` claim from the Keycloak 
 }
 ```
 - **Response**: 404 Not Found (if user doesn't exist)
+- **Note**: This endpoint is publicly accessible without authentication, allowing non-logged-in users to view user profiles.
 
 #### Get User's Comments
 - **URL**: `/api/users/{username}/comments`

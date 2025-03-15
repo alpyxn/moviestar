@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -85,14 +85,6 @@ export default function ActorDetails() {
         }
       } catch (error) {
         console.error('Error fetching actor data:', error);
-        
-        if (isMounted) {
-          toast({
-            title: 'Error',
-            description: 'Failed to load actor details',
-            variant: 'destructive',
-          });
-        }
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -106,7 +98,7 @@ export default function ActorDetails() {
     return () => {
       isMounted = false;
     };
-  }, [actorId]); // Removed toast from dependencies
+  }, [actorId]);
 
   // Handle actor deletion
   const handleDeleteActor = async () => {

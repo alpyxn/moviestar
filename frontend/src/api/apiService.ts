@@ -8,10 +8,10 @@ export interface Genre {
     name: string;
     surname: string;
     birthDay: string;
-    about?: string;  // Added from README
-    pictureUrl?: string;  // Added from README
+    about?: string;
+    pictureUrl?: string;
     movieIds: number[];
-    movies?: Movie[]; // Add optional movies array for populated data
+    movies?: Movie[];
   }
   
   export interface Director {
@@ -20,10 +20,10 @@ export interface Genre {
     surname: string;
     birthDay: string;
     deathDay?: string;
-    about?: string;  // Changed from biography
-    pictureUrl?: string;  // Changed from profilePictureURL to match API
+    about?: string;
+    pictureUrl?: string;
     movieIds: number[];
-    movies?: Movie[]; // Add optional movies array for populated data
+    movies?: Movie[];
   }
   
   export interface Movie {
@@ -31,7 +31,7 @@ export interface Genre {
     title: string;
     description: string;
     year: number;
-    genres: Genre[]; // Changed from single genre to array of genres
+    genres: Genre[];
     actors: Actor[];
     directors: Director[];
     posterURL: string;
@@ -47,8 +47,8 @@ export interface Genre {
     createdAt: string;
     updatedAt: string | null;
     movieId: number;
-    likesCount: number; // Added for like functionality
-    dislikesCount: number; // Added for dislike functionality
+    likesCount: number;
+    dislikesCount: number;
   }
   
   export interface Rating {
@@ -67,9 +67,9 @@ export interface Genre {
     preferences?: Record<string, any>;
     roles?: string[];
     accountNonLocked?: boolean;
-    profilePictureUrl?: string;  // Add missing field from backend
-    lastLogin?: string;         // Add missing field from backend
-    status?: string;            // Add missing field from backend
+    profilePictureUrl?: string;
+    lastLogin?: string;
+    status?: string;
   }
 
   export interface WatchlistItem {
@@ -91,12 +91,11 @@ export interface Genre {
     error?: string;
   }
   
-  // Request payload interfaces
   export interface CreateMoviePayload {
     title: string;
     description: string;
     year: number;
-    genreIds: number[]; // Changed from genreId to genreIds
+    genreIds: number[];
     actorIds: number[];
     directorIds: number[];
     posterURL: string;
@@ -133,9 +132,7 @@ export interface Genre {
     disliked: boolean;
   }
   
-  // API Error response type
   export interface ApiError {
     message?: string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [key: string]: any; 
   }

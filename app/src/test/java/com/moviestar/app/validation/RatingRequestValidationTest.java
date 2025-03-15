@@ -37,8 +37,6 @@ class RatingRequestValidationTest {
     @Test
     void nullRating_ViolatesConstraint() {
         RatingRequest request = new RatingRequest();
-        // Can't set primitive int to null, so use reflection or test differently
-        // For testing purposes, we'll use the no-arg constructor and not set rating at all
         
         Set<ConstraintViolation<RatingRequest>> violations = validator.validate(request);
         

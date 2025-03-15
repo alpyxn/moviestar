@@ -1,24 +1,20 @@
 package com.moviestar.app.controller;
 
-import com.moviestar.app.model.MovieDTO;
 import com.moviestar.app.model.Response.DirectorResponse;
 import com.moviestar.app.model.Response.MovieResponse;
 import com.moviestar.app.service.DirectorService;
-import com.moviestar.app.service.MovieService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/directors")
 @RequiredArgsConstructor
 public class DirectorController {
     private final DirectorService directorService;
-    private final MovieService movieService; // Add this dependency
 
     @GetMapping
     public ResponseEntity<List<DirectorResponse>> getAllDirectors() {

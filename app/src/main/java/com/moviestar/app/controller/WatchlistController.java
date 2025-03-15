@@ -24,7 +24,6 @@ public class WatchlistController {
         return ResponseEntity.ok(watchlistService.getUserWatchlist(username));
     }
     
-    // New endpoint to view another user's watchlist
     @GetMapping("/users/{username}/watchlist")
     public ResponseEntity<List<MovieResponse>> getUserWatchlist(@PathVariable String username) {
         return ResponseEntity.ok(watchlistService.getPublicUserWatchlist(username));

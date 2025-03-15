@@ -33,21 +33,17 @@ public class CommentRepositoryTest {
         List<CommentDTO> user1Comments = Arrays.asList(comment1, comment2);
         List<CommentDTO> user2Comments = Arrays.asList(comment3);
         
-        // Mock repository behavior
         when(commentRepository.findByUsernameOrderByCreatedAtDesc(username1)).thenReturn(user1Comments);
         when(commentRepository.findByUsernameOrderByCreatedAtDesc(username2)).thenReturn(user2Comments);
         
-        // Test finding comments for user1
         List<CommentDTO> resultUser1Comments = commentRepository.findByUsernameOrderByCreatedAtDesc(username1);
         assertEquals(2, resultUser1Comments.size());
         assertTrue(resultUser1Comments.stream().allMatch(c -> c.getUsername().equals(username1)));
         
-        // Test finding comments for user2
         List<CommentDTO> resultUser2Comments = commentRepository.findByUsernameOrderByCreatedAtDesc(username2);
         assertEquals(1, resultUser2Comments.size());
         assertEquals(username2, resultUser2Comments.get(0).getUsername());
         
-        // Verify the repository method was called with the right parameters
         verify(commentRepository).findByUsernameOrderByCreatedAtDesc(username1);
         verify(commentRepository).findByUsernameOrderByCreatedAtDesc(username2);
     }
@@ -56,13 +52,10 @@ public class CommentRepositoryTest {
     void deleteByUsername() {
         String username = "testuser1";
         
-        // Mock repository behavior
         doNothing().when(commentRepository).deleteByUsername(anyString());
         
-        // Execute delete
         commentRepository.deleteByUsername(username);
         
-        // Verify the repository method was called with the right parameter
         verify(commentRepository).deleteByUsername(username);
     }
     

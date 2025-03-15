@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useKeycloak } from '@react-keycloak/web';
 import adminApi from '@/api/adminApi';
@@ -62,9 +62,18 @@ import {
 export default function AdminUsers() {
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [displayedUsers, setDisplayedUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  
+  // Infinite scroll states
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const USERS_PER_BATCH = 20;
+  
+  // Ref for infinite scroll observer
+  const observerRef = useRef<HTMLDivElement>(null);
   
   // State for ban/unban dialog
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -75,6 +84,11 @@ export default function AdminUsers() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { keycloak, initialized } = useKeycloak();
+
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
 
   // Fetch users on component mount
   useEffect(() => {
@@ -98,6 +112,13 @@ export default function AdminUsers() {
         const allUsers = await adminApi.getAllUsers();
         setUsers(allUsers);
         setFilteredUsers(allUsers);
+        
+        // Initialize displayed users with first batch
+        const initialUsers = allUsers.slice(0, USERS_PER_BATCH);
+        setDisplayedUsers(initialUsers);
+        
+        // Check if there are more users to show
+        setHasMore(allUsers.length > USERS_PER_BATCH);
       } catch (error) {
         console.error('Error fetching users:', error);
         toast({
@@ -111,7 +132,7 @@ export default function AdminUsers() {
     };
     
     fetchUsers();
-  }, [keycloak, initialized]);
+  }, [keycloak, initialized, toast]);
 
   // Filter users when search query or status filter changes
   useEffect(() => {
@@ -136,14 +157,52 @@ export default function AdminUsers() {
     }
     
     setFilteredUsers(result);
+    
+    // Reset displayed users when filter changes
+    const initialUsers = result.slice(0, USERS_PER_BATCH);
+    setDisplayedUsers(initialUsers);
+    setHasMore(result.length > USERS_PER_BATCH);
   }, [users, searchQuery, statusFilter]);
+  
+  // Set up intersection observer for infinite scroll
+  useEffect(() => {
+    if (!observerRef.current || !hasMore || loadingMore || loading) return;
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+          loadMoreUsers();
+        }
+      },
+      { threshold: 0.5 }
+    );
+    
+    observer.observe(observerRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, loading, displayedUsers.length]);
+  
+  // Load more users function
+  const loadMoreUsers = useCallback(() => {
+    if (loadingMore || !hasMore) return;
+    
+    setLoadingMore(true);
+    
+    // Short timeout to allow loading indicator to show
+    setTimeout(() => {
+      const currentCount = displayedUsers.length;
+      const nextBatch = filteredUsers.slice(currentCount, currentCount + USERS_PER_BATCH);
+      
+      if (nextBatch.length > 0) {
+        setDisplayedUsers(prev => [...prev, ...nextBatch]);
+      }
+      
+      // Check if we've displayed all filtered users
+      setHasMore(currentCount + nextBatch.length < filteredUsers.length);
+      setLoadingMore(false);
+    }, 300);
+  }, [loadingMore, hasMore, displayedUsers.length, filteredUsers]);
 
-  // Handle search input change
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-  };
-
-  // Format date for display
+  // Format date helper function
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
     try {
@@ -315,8 +374,8 @@ export default function AdminUsers() {
                   </TableHeader>
                   
                   <TableBody>
-                    {filteredUsers.length > 0 ? (
-                      filteredUsers.map(user => (
+                    {displayedUsers.length > 0 ? (
+                      displayedUsers.map(user => (
                         <TableRow key={user.username}>
                           <TableCell>
                             <div className="flex items-center gap-3">
@@ -415,8 +474,18 @@ export default function AdminUsers() {
                 </Table>
               </div>
               
+              {/* Infinite scroll loader */}
+              <div 
+                ref={observerRef} 
+                className="py-6 flex justify-center"
+              >
+                {loadingMore && (
+                  <Loader2 className="h-6 w-6 animate-spin text-rose-600" />
+                )}
+              </div>
+              
               <div className="mt-4 text-sm text-gray-500">
-                Showing {filteredUsers.length} of {users.length} users
+                Showing {displayedUsers.length} of {filteredUsers.length} users
               </div>
             </>
           )}

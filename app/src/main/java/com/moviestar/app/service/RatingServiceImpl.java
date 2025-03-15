@@ -20,16 +20,13 @@ public class RatingServiceImpl implements RatingService {
     @Transactional
     @CacheEvict(value = {"movieRatingAverage", "movieRatingCount"}, key = "#ratingDTO.movieId")
     public void addRating(RatingDTO ratingDTO, String username) {
-        // Check if user already rated this movie
         Optional<RatingDTO> existingRating = ratingRepository.findByUsernameAndMovieId(username, ratingDTO.getMovieId());
         
         if (existingRating.isPresent()) {
-            // Update existing rating
             RatingDTO rating = existingRating.get();
             rating.setRating(ratingDTO.getRating());
             ratingRepository.save(rating);
         } else {
-            // Create new rating
             ratingDTO.setUsername(username);
             ratingRepository.save(ratingDTO);
         }

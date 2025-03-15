@@ -135,10 +135,8 @@ public class CommentService {
 
     @Transactional
     public void deleteComment(Long commentId) {
-        // First delete all likes for this comment
         commentLikeRepository.deleteByCommentId(commentId);
         
-        // Then delete the comment
         commentRepository.deleteById(commentId);
     }
 
@@ -152,10 +150,6 @@ public class CommentService {
         return like.isPresent() && !like.get().getIsLike();
     }
 
-    /**
-     * Update a comment
-     * Only allows updating if the user is the comment author
-     */
     @Transactional
     public CommentResponse updateComment(Long commentId, String username, String newText) {
         CommentDTO comment = commentRepository.findById(commentId)
@@ -172,10 +166,6 @@ public class CommentService {
         return convertToResponse(updatedComment);
     }
 
-    /**
-     * Delete a user's own comment
-     * Only allows deletion if the user is the comment author
-     */
     @Transactional
     public void deleteUserComment(Long commentId, String username) {
         CommentDTO comment = commentRepository.findById(commentId)
@@ -185,43 +175,30 @@ public class CommentService {
             throw new RuntimeException("You can only delete your own comments");
         }
         
-        // Delete all likes for this comment
         commentLikeRepository.deleteByCommentId(commentId);
         
-        // Delete the comment
         commentRepository.deleteById(commentId);
     }
 
-    /**
-     * Get all comments by a specific user
-     */
     public List<CommentResponse> getCommentsByUsername(String username) {
         return commentRepository.findByUsernameOrderByCreatedAtDesc(username).stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
     
-    /**
-     * Delete all comments from a specific user
-     * This is an admin-only operation
-     */
     @Transactional
     public void deleteAllUserComments(String username) {
         try {
-            // Get all comments by the user
             List<CommentDTO> userComments = commentRepository.findByUsernameOrderByCreatedAtDesc(username);
             
-            // Delete likes for each comment individually to avoid issues
             for (CommentDTO comment : userComments) {
                 commentLikeRepository.deleteByCommentId(comment.getId());
             }
             
-            // Delete all comments by username using individual deletes instead of bulk delete
             for (CommentDTO comment : userComments) {
                 commentRepository.deleteById(comment.getId());
             }
         } catch (Exception e) {
-            // Log the full error with stack trace
             e.printStackTrace();
             throw new RuntimeException("Failed to delete all comments for user: " + username, e);
         }

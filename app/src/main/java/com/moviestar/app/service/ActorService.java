@@ -17,14 +17,10 @@ import java.util.stream.Collectors;
 public class ActorService {
     private final ActorRepository actorRepository;
 
-    /**
-     * Get all movies for a specific actor
-     */
     public List<MovieDTO> getActorMovies(Long actorId) {
         ActorDTO actor = actorRepository.findById(actorId)
                 .orElseThrow(() -> new RuntimeException("Actor not found"));
         
-        // Return the list of movies associated with this actor
         return actor.getMovies();
     }
 

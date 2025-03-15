@@ -88,6 +88,10 @@ public class MovieService {
         return movieRepository.findByGenresGenre(genre);
     }
 
+    public List<MovieDTO> getRandomizedMovies() {
+        return movieRepository.findAllRandomized();
+    }
+
     public MovieResponse convertToResponse(MovieDTO movieDTO) {
         List<ActorResponse> actors = movieDTO.getActors().stream()
                 .map(this::convertActorToResponse)
@@ -100,7 +104,6 @@ public class MovieService {
                 .map(this::convertGenreToResponse)
                 .collect(Collectors.toList());
                 
-        // Add director conversion
         List<DirectorResponse> directors = movieDTO.getDirectors().stream()
                 .map(this::convertDirectorToResponse)
                 .collect(Collectors.toList());
@@ -112,7 +115,7 @@ public class MovieService {
                 .year(movieDTO.getYear())
                 .genres(genreResponses)
                 .actors(actors)
-                .directors(directors) // Include directors in the response
+                .directors(directors) 
                 .posterURL(movieDTO.getPosterURL())
                 .backdropURL(movieDTO.getBackdropURL())
                 .averageRating(averageRating)
@@ -224,7 +227,6 @@ public class MovieService {
             movie.setDirectors(new ArrayList<>());
         }
         
-        // Check if director is already in the movie
         boolean directorExists = movie.getDirectors().stream()
                 .anyMatch(d -> d.getId().equals(directorId));
         

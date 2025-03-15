@@ -88,10 +88,7 @@ export default function AddDirector() {
         pictureUrl: data.pictureUrl
       };
       
-      console.log('Submitting director data:', directorPayload);
-      
-      const response = await adminApi.createDirector(directorPayload);
-      console.log('Director creation response:', response);
+      await adminApi.createDirector(directorPayload);
       
       toast({
         title: "Success!",

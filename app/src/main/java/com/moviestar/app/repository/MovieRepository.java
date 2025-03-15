@@ -16,4 +16,7 @@ public interface MovieRepository extends JpaRepository<MovieDTO, Long> {
 
     @Query("SELECT m FROM MovieDTO m JOIN m.genres g WHERE g.genre = :genre")
     List<MovieDTO> findByGenresGenre(String genre);
+
+    @Query(value = "SELECT * FROM movie ORDER BY RANDOM()", nativeQuery = true)
+    List<MovieDTO> findAllRandomized();
 }

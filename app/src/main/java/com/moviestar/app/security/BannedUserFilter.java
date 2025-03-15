@@ -27,19 +27,26 @@ public class BannedUserFilter extends OncePerRequestFilter {
     private final UserService userService;
     private final ObjectMapper objectMapper;
     
+    private static final String USER_PROFILE_PATH_PATTERN = "/api/users/[^/]+$";
+    
+    // Check if the path is for viewing user profile (used for SecurityConfig)
+    public static boolean isUserProfileEndpoint(String path) {
+        return path != null && path.matches(USER_PROFILE_PATH_PATTERN);
+    }
+    
+    // Check if path is a public endpoint that doesn't need authentication
     private boolean isPublicEndpoint(String path) {
-        return path.startsWith("/api/movies") && !path.contains("/comments") && !path.contains("/ratings");
+        return path != null && path.startsWith("/api/movies") && 
+               !path.contains("/comments") && 
+               !path.contains("/ratings");
+        // Note: User profile endpoints are handled separately in SecurityConfig
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) 
             throws ServletException, IOException {
-
-        if (isPublicEndpoint(request.getRequestURI())) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
+        
+        // Always process authenticated users regardless of endpoint type
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         
         if (authentication instanceof JwtAuthenticationToken) {

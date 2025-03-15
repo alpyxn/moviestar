@@ -204,10 +204,8 @@ class DirectorServiceTest {
         
         when(directorRepository.findById(directorId)).thenReturn(Optional.of(director));
         
-        // Set movies for the director
         director.setMovies(movies);
         
-        // Mock the conversion of each MovieDTO to MovieResponse
         when(movieService.convertToResponse(movies.get(0))).thenReturn(movieResponses.get(0));
         when(movieService.convertToResponse(movies.get(1))).thenReturn(movieResponses.get(1));
         
@@ -233,7 +231,6 @@ class DirectorServiceTest {
         
         when(directorRepository.findById(directorId)).thenReturn(Optional.of(director));
         
-        // Set an empty movie list
         director.setMovies(Collections.emptyList());
         
         List<MovieResponse> result = directorService.getDirectorMovies(directorId);

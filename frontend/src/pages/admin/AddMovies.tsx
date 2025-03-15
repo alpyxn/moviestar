@@ -71,37 +71,23 @@ export default function AddMovies() {
     }
     
     try {
-      // Try to update token with 60 seconds minimum validity
-      const refreshed = await keycloak.updateToken(60);
-      if (!refreshed) {
-        console.log("Token still valid, no refresh needed");
-      }
+      await keycloak.updateToken(60);
       return true;
     } catch (error) {
-      console.error("Failed to refresh token:", error);
       keycloak.login();
       return false;
     }
   };
 
   useEffect(() => {
-    console.log("Auth status:", {
-      initialized,
-      authenticated: keycloak?.authenticated || false,
-      tokenExpired: keycloak?.isTokenExpired() || true,
-      hasToken: !!keycloak?.token
-    });
-    
     let mounted = true;
     
     const fetchData = async () => {
       if (!initialized) {
-        console.log("Keycloak not initialized yet");
         return;
       }
       
       if (!keycloak.authenticated) {
-        console.log("User not authenticated, redirecting to login");
         keycloak.login();
         return;
       }
@@ -124,13 +110,7 @@ export default function AddMovies() {
         setActors(actorsData);
         setDirectors(directorsData);
         
-        // Debug logging
-        if (genresData.length === 0) console.warn("No genres loaded");
-        if (actorsData.length === 0) console.warn("No actors loaded");
-        if (directorsData.length === 0) console.warn("No directors loaded");
-        
       } catch (error: unknown) {
-        console.error("Error loading form data:", error);
         if (mounted) {
           toast({
             title: "Error",

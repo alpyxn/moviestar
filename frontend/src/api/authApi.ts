@@ -2,7 +2,6 @@ import useAuth from "../auth/useAuth";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8081/api";
 
-// Custom hook to create an authenticated fetch function
 export function useApiClient() {
   const { token } = useAuth();
   
@@ -21,9 +20,7 @@ export function useApiClient() {
       headers,
     });
 
-    // Handle non-2xx responses
     if (!response.ok) {
-      // Parse error response
       let errorData;
       try {
         errorData = await response.json();
@@ -35,7 +32,6 @@ export function useApiClient() {
       throw new Error(errorData.message || `Error ${response.status}`);
     }
 
-    // Check if response is empty
     const contentType = response.headers.get("content-type");
     if (contentType && contentType.includes("application/json")) {
       return response.json();

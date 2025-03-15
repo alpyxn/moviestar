@@ -84,15 +84,13 @@ class RatingServiceImplTest {
         ratingDTO.setMovieId(movieId);
         ratingDTO.setRating(9);
 
-        // Fix parameter order to match the method signature
         when(ratingRepository.findByUsernameAndMovieId(username, movieId))
             .thenReturn(Optional.of(ratingDTO));
 
-        // Fix return type to match the method signature - it returns Optional<Integer>, not Optional<RatingDTO>
         Optional<Integer> result = ratingService.getUserRatingForMovie(movieId, username);
 
         assertTrue(result.isPresent());
-        assertEquals(9, result.get());  // Just check the rating value
+        assertEquals(9, result.get());  
     }
 
     @Test
@@ -103,7 +101,6 @@ class RatingServiceImplTest {
         when(ratingRepository.findByUsernameAndMovieId(username, movieId))
             .thenReturn(Optional.empty());
 
-        // Fix return type to match the method signature
         Optional<Integer> result = ratingService.getUserRatingForMovie(movieId, username);
 
         assertFalse(result.isPresent());
@@ -114,7 +111,6 @@ class RatingServiceImplTest {
         String username = "testuser";
         Long movieId = 1L;
 
-        // Fix parameter order to match the method signature
         ratingService.removeRating(movieId, username);
 
         verify(ratingRepository).deleteByUsernameAndMovieId(username, movieId);
@@ -138,8 +134,6 @@ class RatingServiceImplTest {
         
         when(ratingRepository.findByUsername(username)).thenReturn(Arrays.asList(rating1, rating2));
         
-        // Remove the mocks for the non-existent enrichRatingWithMovieDetails method
-        // The real implementation doesn't use any enrichment methods
 
         List<RatingDTO> results = ratingService.getUserRatings(username);
 
@@ -149,7 +143,6 @@ class RatingServiceImplTest {
         assertEquals(2L, results.get(1).getMovieId());
         assertEquals(9, results.get(1).getRating());
         
-        // Just verify the repository was called correctly
         verify(ratingRepository).findByUsername(username);
     }
     
@@ -165,7 +158,6 @@ class RatingServiceImplTest {
         
         when(ratingRepository.findByUsername(username)).thenReturn(Collections.singletonList(rating1));
         
-        // Remove the mocks for the non-existent enrichRatingWithMovieDetails method
 
         List<RatingDTO> results = ratingService.getUserRatings(username);
 

@@ -7,5 +7,4 @@ CREATE TABLE IF NOT EXISTS watchlist (
     CONSTRAINT fk_watchlist_movie FOREIGN KEY (movie_id) REFERENCES movie(id) ON DELETE CASCADE
 );
 
--- Create an index for faster lookups by username
 CREATE INDEX idx_watchlist_username ON watchlist(username);
