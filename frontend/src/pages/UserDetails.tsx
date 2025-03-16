@@ -72,7 +72,6 @@ export default function UserDetails() {
   const { keycloak, initialized } = useKeycloak();
   const isAdmin = initialized && keycloak.authenticated && keycloak.hasRealmRole('ADMIN');
   
-  // Add state for ban/unban functionality
   const [isBanning, setIsBanning] = useState(false);
   const [isUnbanning, setIsUnbanning] = useState(false);
   const [showBanDialog, setShowBanDialog] = useState(false);

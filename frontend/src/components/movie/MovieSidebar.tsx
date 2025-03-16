@@ -32,12 +32,12 @@ export default function MovieSidebar({
   // Generate stars for rating with enhanced visual appearance
   const renderStars = (rating: number | null, isInteractive: boolean = false) => {
     return (
-      <div className="flex flex-wrap gap-1"> {/* Added gap between stars */}
+      <div className="flex flex-wrap gap-1"> 
         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
           <Star
             key={star}
-            size={32} // Even larger star size
-            strokeWidth={1.5} // Thinner stroke for better appearance
+            size={32} 
+            strokeWidth={1.5} 
             className={`${isInteractive ? 'cursor-pointer transition-all hover:scale-110' : ''} ${
               isInteractive && star <= (rating || 0)
                 ? 'text-yellow-400 fill-yellow-400 drop-shadow-sm'
@@ -60,11 +60,11 @@ export default function MovieSidebar({
       <Card className="overflow-hidden border-2">
         <CardContent className="p-6">
           <h3 className="text-xl font-bold mb-4 flex items-center">
-            <Star className="h-6 w-6 text-yellow-500 mr-2 fill-yellow-500" /> {/* Bigger icon */}
+            <Star className="h-6 w-6 text-yellow-500 mr-2 fill-yellow-500" /> 
             Rating
           </h3>
-          <div className="flex items-center gap-4 mb-6"> {/* Increased spacing */}
-            <div className="text-5xl font-bold text-yellow-500">{averageRating.toFixed(1)}</div> {/* Larger text */}
+          <div className="flex items-center gap-4 mb-6"> 
+            <div className="text-5xl font-bold text-yellow-500">{averageRating.toFixed(1)}</div> 
             <div className="text-gray-500">
               <div className="text-sm font-medium">out of 10</div>
               <div className="text-xs">{totalRatings} ratings</div>
@@ -72,8 +72,8 @@ export default function MovieSidebar({
           </div>
 
           {isAuthenticated ? (
-            <div className="space-y-3"> {/* More spacing */}
-              <h4 className="text-base font-medium">Rate this movie:</h4> {/* Larger text */}
+            <div className="space-y-3"> 
+              <h4 className="text-base font-medium">Rate this movie:</h4> 
               {isRating ? (
                 <div className="flex items-center justify-center py-2">
                   <Loader2 className="h-6 w-6 animate-spin mr-2 text-rose-600" />

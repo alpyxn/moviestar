@@ -23,7 +23,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-// Import our modular components
 import ProfileSidebar from '@/components/profile/ProfileSidebar';
 import WatchlistTab from '@/components/profile/WatchlistTab';
 import CommentsTab from '@/components/profile/CommentsTab';
@@ -31,11 +30,12 @@ import RatingsTab from '@/components/profile/RatingsTab';
 import SettingsTab from '@/components/profile/SettingsTab';
 
 export default function ProfilePage() {
-  // User and authentication state
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const { keycloak, initialized } = useKeycloak();
   const isAuthenticated = initialized && keycloak.authenticated;
+  
+  const isAdmin = Boolean(initialized && keycloak.authenticated && keycloak.hasRealmRole('ADMIN'));
   
   // Watchlist state
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
@@ -69,11 +69,9 @@ export default function ProfilePage() {
   const [newProfilePicture, setNewProfilePicture] = useState<string | null>(null);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   
-  // Constants for pagination
   const ITEMS_PER_BATCH = 10;
   const COMMENTS_PER_PAGE = 10;
 
-  // Fetch initial user data
   useEffect(() => {
     let isMounted = true;
     
@@ -96,42 +94,33 @@ export default function ProfilePage() {
           return;
         }
         
-        // Fetch user profile data
         const userProfile = await userApi.getCurrentUser();
         if (!isMounted) return;
         setUser(userProfile);
         
-        // Fetch all watchlist items
         try {
           const watchlistData = await watchlistApi.getWatchlist();
           if (!isMounted) return;
           
-          // Store all items in state
           setWatchlist(watchlistData);
           
-          // Initialize with first batch of items
           const initialItems = watchlistData.slice(0, ITEMS_PER_BATCH);
           setDisplayedWatchlistItems(initialItems);
           
-          // Set has more flag based on if there are more items than initially displayed
           setHasMoreWatchlist(watchlistData.length > ITEMS_PER_BATCH);
         } catch (error) {
           console.error("Error fetching watchlist:", error);
         }
         
-        // Fetch all ratings items
         try {
           const ratingsData = await moviesApi.getUserRatings();
           if (!isMounted) return;
           
-          // Store all items in state
           setUserRatings(ratingsData);
           
-          // Initialize with first batch of items
           const initialItems = ratingsData.slice(0, ITEMS_PER_BATCH);
           setDisplayedRatingItems(initialItems);
           
-          // Set has more flag based on if there are more items than initially displayed
           setHasMoreRatings(ratingsData.length > ITEMS_PER_BATCH);
         } catch (error) {
           console.error("Error fetching ratings:", error);
@@ -150,7 +139,6 @@ export default function ProfilePage() {
     return () => { isMounted = false; };
   }, [initialized, keycloak]);
 
-  // Set up intersection observer for watchlist
   useEffect(() => {
     if (!watchlistEndRef.current || !hasMoreWatchlist || loadingMoreWatchlist || !isAuthenticated) return;
     
@@ -167,7 +155,6 @@ export default function ProfilePage() {
     return () => observer.disconnect();
   }, [hasMoreWatchlist, loadingMoreWatchlist, displayedWatchlistItems, isAuthenticated]);
   
-  // Set up intersection observer for ratings
   useEffect(() => {
     if (!ratingsEndRef.current || !hasMoreRatings || loadingMoreRatings || !isAuthenticated) return;
     
@@ -184,11 +171,9 @@ export default function ProfilePage() {
     return () => observer.disconnect();
   }, [hasMoreRatings, loadingMoreRatings, displayedRatingItems, isAuthenticated]);
 
-  // Load more watchlist items from already fetched data
   const loadMoreWatchlist = useCallback(() => {
     setLoadingMoreWatchlist(true);
     
-    // Short timeout to allow loading indicator to show
     setTimeout(() => {
       const currentCount = displayedWatchlistItems.length;
       const nextItems = watchlist.slice(currentCount, currentCount + ITEMS_PER_BATCH);
@@ -197,17 +182,14 @@ export default function ProfilePage() {
         setDisplayedWatchlistItems(prev => [...prev, ...nextItems]);
       }
       
-      // Check if we've displayed all available items
       setHasMoreWatchlist(currentCount + nextItems.length < watchlist.length);
       setLoadingMoreWatchlist(false);
     }, 300);
   }, [displayedWatchlistItems, watchlist]);
   
-  // Load more rating items from already fetched data
   const loadMoreRatings = useCallback(() => {
     setLoadingMoreRatings(true);
     
-    // Short timeout to allow loading indicator to show
     setTimeout(() => {
       const currentCount = displayedRatingItems.length;
       const nextItems = userRatings.slice(currentCount, currentCount + ITEMS_PER_BATCH);
@@ -216,13 +198,11 @@ export default function ProfilePage() {
         setDisplayedRatingItems(prev => [...prev, ...nextItems]);
       }
       
-      // Check if we've displayed all available items
       setHasMoreRatings(currentCount + nextItems.length < userRatings.length);
       setLoadingMoreRatings(false);
     }, 300);
   }, [displayedRatingItems, userRatings]);
 
-  // Handle removing item from watchlist
   const handleRemoveFromWatchlist = async (movieId: number) => {
     try {
       setRemovingItemId(movieId);
@@ -236,26 +216,21 @@ export default function ProfilePage() {
     }
   };
 
-  // Handle profile picture selection (without immediate update)
   const handleProfilePictureSelected = (imageUrl: string) => {
     setNewProfilePicture(imageUrl);
   };
   
-  // Handle profile update (including picture)
   const handleUpdateProfile = async () => {
     if (!isAuthenticated) return;
     
-    // Only update if there's a new profile picture and it's different from the current one
     if (newProfilePicture !== null && newProfilePicture !== user?.profilePictureUrl) {
       try {
         setIsUpdatingProfile(true);
         
         await userApi.updateProfilePicture(newProfilePicture);
         
-        // Update the local user state
         setUser(prev => prev ? { ...prev, profilePictureUrl: newProfilePicture } : null);
         
-        // Reset new profile picture state
         setNewProfilePicture(null);
       } catch (error) {
         console.error('Error updating profile picture:', error);
@@ -265,23 +240,19 @@ export default function ProfilePage() {
     }
   };
   
-  // Handle profile picture removal
   const handleRemoveProfilePicture = async () => {
     if (!isAuthenticated) return;
     
     try {
       setIsUpdatingProfile(true);
       
-      // Send null to remove profile picture
       await userApi.updateProfilePicture(null);
       
-      // Update local state - use empty string for the frontend display
       setUser(prev => {
         if (!prev) return null;
         return { ...prev, profilePictureUrl: "" };
       });
       
-      // Also clear any pending new profile picture
       setNewProfilePicture(null);
     } catch (error) {
       console.error('Error removing profile picture:', error);
@@ -290,7 +261,6 @@ export default function ProfilePage() {
     }
   };
 
-  // Fetch user's comments
   useEffect(() => {
     const fetchComments = async () => {
       if (!isAuthenticated || !user?.username) return;
@@ -300,12 +270,10 @@ export default function ProfilePage() {
         const comments = await userApi.getUserComments(user.username);
         setUserComments(comments);
         
-        // Initialize displayed comments
         const initialComments = comments.slice(0, COMMENTS_PER_PAGE);
         setDisplayedComments(initialComments);
         setHasMoreComments(comments.length > COMMENTS_PER_PAGE);
         
-        // Fetch movie titles for the comments
         await fetchMovieTitles(comments);
       } catch (error) {
         console.error('Error fetching comments:', error);
@@ -317,7 +285,6 @@ export default function ProfilePage() {
     fetchComments();
   }, [isAuthenticated, user]);
   
-  // Fetch movie titles for comments
   const fetchMovieTitles = async (comments: Comment[]) => {
     const uniqueMovieIds = Array.from(new Set(comments.map(c => c.movieId)));
     const titles: Record<number, string> = {};
@@ -335,7 +302,6 @@ export default function ProfilePage() {
     setMovieTitles(titles);
   };
   
-  // Set up intersection observer for comments
   useEffect(() => {
     if (!commentsEndRef.current || !hasMoreComments || loadingMoreComments || commentsLoading) return;
     
@@ -352,13 +318,11 @@ export default function ProfilePage() {
     return () => observer.disconnect();
   }, [hasMoreComments, loadingMoreComments, commentsLoading]);
   
-  // Load more comments function
   const loadMoreComments = useCallback(() => {
     if (loadingMoreComments || !hasMoreComments) return;
     
     setLoadingMoreComments(true);
     
-    // Short timeout to allow loading indicator to show
     setTimeout(() => {
       const nextPage = commentsPage + 1;
       const start = (nextPage - 1) * COMMENTS_PER_PAGE;
@@ -375,12 +339,10 @@ export default function ProfilePage() {
     }, 300);
   }, [loadingMoreComments, hasMoreComments, commentsPage, userComments]);
   
-  // Delete comment handler
   const handleDeleteComment = (commentId: number) => {
     setDeleteCommentId(commentId);
   };
   
-  // Execute comment deletion
   const executeCommentDeletion = async () => {
     if (!deleteCommentId) return;
     
@@ -388,15 +350,12 @@ export default function ProfilePage() {
       setIsDeletingComment(true);
       await moviesApi.deleteComment(deleteCommentId);
       
-      // Update local state by removing the deleted comment
       const updatedComments = userComments.filter(c => c.id !== deleteCommentId);
       setUserComments(updatedComments);
       
-      // Update displayed comments
       const updatedDisplayed = displayedComments.filter(c => c.id !== deleteCommentId);
       setDisplayedComments(updatedDisplayed);
       
-      // If we've removed a comment, we might need to load one more
       if (updatedDisplayed.length < displayedComments.length && userComments.length > displayedComments.length) {
         const nextIndex = displayedComments.length;
         if (userComments[nextIndex]) {
@@ -488,6 +447,7 @@ export default function ProfilePage() {
                 hasMoreComments={hasMoreComments}
                 commentsEndRef={commentsEndRef}
                 onDeleteComment={handleDeleteComment}
+                isAdmin={isAdmin}
               />
             </TabsContent>
             

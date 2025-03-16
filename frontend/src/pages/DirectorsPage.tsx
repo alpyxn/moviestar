@@ -45,21 +45,18 @@ export default function DirectorsPage() {
   // Infinite scroll states
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const DIRECTORS_PER_BATCH = 8; // Same as previous pageSize
+  const DIRECTORS_PER_BATCH = 8; 
   
-  // Ref for infinite scroll observer
   const observerRef = useRef<HTMLDivElement>(null);
   
   const { toast } = useToast();
   const navigate = useNavigate();
   const { keycloak, initialized } = useKeycloak();
 
-  // Get admin status
   const isAdmin = initialized && 
     keycloak.authenticated && 
     keycloak.hasRealmRole('ADMIN');
 
-  // Fetch directors on component mount
   useEffect(() => {
     let isMounted = true;
     
@@ -70,7 +67,6 @@ export default function DirectorsPage() {
         if (!isMounted) return;
         setDirectors(data);
         
-        // Also set filtered and displayed directors immediately 
         setFilteredDirectors(data);
         setDisplayedDirectors(data.slice(0, DIRECTORS_PER_BATCH));
         setHasMore(data.length > DIRECTORS_PER_BATCH);
@@ -95,11 +91,9 @@ export default function DirectorsPage() {
     return () => {
       isMounted = false;
     };
-  }, [toast]); // Add toast as a dependency
+  }, [toast]); 
 
-  // Updated search effect with proper dependencies
   useEffect(() => {
-    // Skip this effect when directors array is empty (initial render)
     if (!directors.length) return;
     
     const lowercaseSearch = searchTerm.toLowerCase();
@@ -115,16 +109,13 @@ export default function DirectorsPage() {
     setFilteredDirectors(filtered);
   }, [searchTerm, directors]);
   
-  // Separate effect to update displayed directors when filtered directors change
   useEffect(() => {
-    // Skip if we're still loading the initial data
     if (loading || !filteredDirectors.length) return;
     
     setDisplayedDirectors(filteredDirectors.slice(0, DIRECTORS_PER_BATCH));
     setHasMore(filteredDirectors.length > DIRECTORS_PER_BATCH);
   }, [filteredDirectors, loading]);
   
-  // Set up intersection observer for infinite scroll
   useEffect(() => {
     if (!observerRef.current || !hasMore || loadingMore || loading) return;
     
@@ -141,13 +132,11 @@ export default function DirectorsPage() {
     return () => observer.disconnect();
   }, [hasMore, loadingMore, loading, displayedDirectors.length]);
   
-  // Load more directors function
   const loadMoreDirectors = useCallback(() => {
     if (loadingMore || !hasMore) return;
     
     setLoadingMore(true);
     
-    // Short timeout to allow loading indicator to show
     setTimeout(() => {
       const currentCount = displayedDirectors.length;
       const nextBatch = filteredDirectors.slice(currentCount, currentCount + DIRECTORS_PER_BATCH);
@@ -156,7 +145,6 @@ export default function DirectorsPage() {
         setDisplayedDirectors(prev => [...prev, ...nextBatch]);
       }
       
-      // Check if we've displayed all filtered directors
       setHasMore(currentCount + nextBatch.length < filteredDirectors.length);
       setLoadingMore(false);
     }, 300);
@@ -165,13 +153,11 @@ export default function DirectorsPage() {
   const handleDeleteDirector = async (directorId: number) => {
     try {
       await adminApi.deleteDirector(directorId);
-      // Keep toast for admin action
       toast({
         title: "Success",
         description: "Director deleted successfully",
       });
       
-      // Define the fetchDirectors function inline to refresh the list
       const fetchDirectorsAfterDelete = async () => {
         try {
           const data = await directorsApi.getAll();
@@ -186,10 +172,8 @@ export default function DirectorsPage() {
         }
       };
       
-      // Call the newly defined function
       fetchDirectorsAfterDelete();
     } catch (error) {
-      // Keep error toast for admin action
       toast({
         title: "Error",
         description: "Failed to delete director. The director may be associated with movies.",
@@ -200,7 +184,6 @@ export default function DirectorsPage() {
     }
   };
 
-  // Get initials for avatar fallback
   const getInitials = (director: Director): string => {
     return `${director.name?.charAt(0) || ''}${director.surname?.charAt(0) || ''}`;
   };

@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 
 interface MovieHeroProps {
   movie: Movie;
-  isAdmin: boolean; // This must be a boolean
+  isAdmin: boolean; 
   onDeleteClick: () => void;
 }
 

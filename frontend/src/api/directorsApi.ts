@@ -50,17 +50,14 @@ const directorsApi = {
    */
   getFilmography: async (id: number): Promise<Movie[]> => {
     try {
-      // Try to use the dedicated endpoint
       const response = await publicApiClient.get<Movie[]>(`/directors/${id}/movies`);
       return response.data;
     } catch (error: unknown) {
-      // Fallback: Get the director and extract movies from there if the endpoint isn't available
       console.warn('Directors filmography endpoint not available, using fallback');
       const director = await directorsApi.getById(id);
       if (director.movies) {
         return director.movies;
       } else if (director.movieIds && director.movieIds.length > 0) {
-        // If we only have IDs but not full movies, we can't show detailed information
         return director.movieIds.map(id => ({ id } as unknown as Movie));
       }
       return [];

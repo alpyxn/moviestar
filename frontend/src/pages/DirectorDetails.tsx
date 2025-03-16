@@ -43,12 +43,10 @@ export default function DirectorDetails() {
   const { toast } = useToast();
   const { keycloak, initialized } = useKeycloak();
   
-  // Check if user is admin
   const isAdmin = initialized && 
     keycloak.authenticated && 
     keycloak.hasRealmRole('ADMIN');
 
-  // Fetch director data with improved error handling
   useEffect(() => {
     let isMounted = true;
     
@@ -57,14 +55,12 @@ export default function DirectorDetails() {
       
       try {
         setLoading(true);
-        // First get the director details
         const directorData = await directorsApi.getById(directorId);
         
         if (!isMounted) return;
         
         setDirector(directorData);
         
-        // Then try to get the filmography
         try {
           const moviesData = await directorsApi.getFilmography(directorId);
           
@@ -76,7 +72,6 @@ export default function DirectorDetails() {
           
           if (!isMounted) return;
           
-          // If we already have movies from the director data, use those
           if (directorData.movies) {
             setMovies(directorData.movies);
           } else {
@@ -94,18 +89,15 @@ export default function DirectorDetails() {
 
     fetchDirectorData();
     
-    // Cleanup function
     return () => {
       isMounted = false;
     };
   }, [directorId]);
 
-  // Handle director deletion
   const handleDeleteDirector = async () => {
     if (!isAdmin || !directorId) return;
 
     try {
-      // Ensure token is fresh before making admin requests
       if (keycloak.authenticated) {
         try {
           await keycloak.updateToken(30);
@@ -122,7 +114,6 @@ export default function DirectorDetails() {
       }
       
       await adminApi.deleteDirector(directorId);
-      // Keep toast for admin action
       toast({
         title: "Success",
         description: "Director deleted successfully",
@@ -130,7 +121,6 @@ export default function DirectorDetails() {
       navigate('/directors');
     } catch (error) {
       console.error('Error deleting director:', error);
-      // Keep error toast for admin action
       toast({
         title: "Error",
         description: "Failed to delete director. They may be associated with movies.",
@@ -141,12 +131,10 @@ export default function DirectorDetails() {
     }
   };
 
-  // Generate initials for avatar
   const getInitials = (name: string, surname: string): string => {
     return `${name.charAt(0)}${surname.charAt(0)}`;
   };
 
-  // Format date to display
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return 'Unknown';
     try {
@@ -192,7 +180,6 @@ export default function DirectorDetails() {
       </Button>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Director Info - 1/3 width on large screens */}
         <div className="lg:col-span-1 space-y-6">
           <div className="flex flex-col items-center text-center p-6 bg-card rounded-lg shadow">
             <Avatar className="h-48 w-48 mb-4">
@@ -255,7 +242,6 @@ export default function DirectorDetails() {
           </div>
         </div>
         
-        {/* Main Content - 2/3 width on large screens */}
         <div className="lg:col-span-2 space-y-8">
           {/* Biography Section */}
           <section>

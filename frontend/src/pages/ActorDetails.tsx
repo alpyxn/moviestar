@@ -43,12 +43,10 @@ export default function ActorDetails() {
   const { toast } = useToast();
   const { keycloak, initialized } = useKeycloak();
   
-  // Check if user is admin
   const isAdmin = initialized && 
     keycloak.authenticated && 
     keycloak.hasRealmRole('ADMIN');
 
-  // Fetch actor data with improved error handling
   useEffect(() => {
     let isMounted = true;
     
@@ -57,14 +55,12 @@ export default function ActorDetails() {
       
       try {
         setLoading(true);
-        // First get the actor details
         const actorData = await actorsApi.getById(actorId);
         
         if (!isMounted) return;
         
         setActor(actorData);
         
-        // Then try to get the filmography
         try {
           const moviesData = await actorsApi.getFilmography(actorId);
           
@@ -76,7 +72,6 @@ export default function ActorDetails() {
           
           if (!isMounted) return;
           
-          // If we already have movies from the actor data, use those
           if (actorData.movies) {
             setMovies(actorData.movies);
           } else {
@@ -94,18 +89,15 @@ export default function ActorDetails() {
 
     fetchActorData();
     
-    // Cleanup function
     return () => {
       isMounted = false;
     };
   }, [actorId]);
 
-  // Handle actor deletion
   const handleDeleteActor = async () => {
     if (!isAdmin || !actorId) return;
 
     try {
-      // Ensure token is fresh before making admin requests
       if (keycloak.authenticated) {
         try {
           await keycloak.updateToken(30);
@@ -122,7 +114,6 @@ export default function ActorDetails() {
       }
       
       await adminApi.deleteActor(actorId);
-      // Keep toast for admin action
       toast({
         title: "Success",
         description: "Actor deleted successfully",
@@ -130,7 +121,6 @@ export default function ActorDetails() {
       navigate('/actors');
     } catch (error) {
       console.error('Error deleting actor:', error);
-      // Keep error toast for admin action
       toast({
         title: "Error",
         description: "Failed to delete actor. They may be associated with movies.",
@@ -141,12 +131,10 @@ export default function ActorDetails() {
     }
   };
 
-  // Generate initials for avatar
   const getInitials = (name: string, surname: string): string => {
     return `${name.charAt(0)}${surname.charAt(0)}`;
   };
 
-  // Format date to display
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return 'Unknown';
     try {
@@ -192,7 +180,6 @@ export default function ActorDetails() {
       </Button>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Actor Info - 1/3 width on large screens */}
         <div className="lg:col-span-1 space-y-6">
           <div className="flex flex-col items-center text-center p-6 bg-card rounded-lg shadow">
             <Avatar className="h-48 w-48 mb-4">
@@ -254,7 +241,6 @@ export default function ActorDetails() {
           </div>
         </div>
         
-        {/* Main Content - 2/3 width on large screens */}
         <div className="lg:col-span-2 space-y-8">
           {/* Biography Section */}
           <section>

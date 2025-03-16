@@ -24,14 +24,14 @@ const initOptions: Keycloak.KeycloakInitOptions = {
 
 type AuthContextType = {
   isAuthenticated: boolean;
-  hasRole: (role: string) => boolean; // Changed return type from false to boolean
+  hasRole: (role: string) => boolean; 
   login: () => void;
   logout: () => void;
 };
 
 const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
-  hasRole: (_: string) => false, // Changed parameter name to _ since it's unused
+  hasRole: (_: string) => false, 
   login: () => {},
   logout: () => {},
 });

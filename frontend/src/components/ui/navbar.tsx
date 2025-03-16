@@ -14,7 +14,6 @@ export function Navbar() {
     return (
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-md shadow-sm">
         <div className="flex h-16 items-center w-full">
-          {/* Logo pinned to left edge */}
           <div className="px-4">
             <Link to="/" className="font-bold text-xl flex items-center gap-2 text-rose-600">
               <Film size={24} className="text-rose-600" />
@@ -22,7 +21,6 @@ export function Navbar() {
             </Link>
           </div>
           
-          {/* Loading button pinned to right edge */}
           <div className="ml-auto px-4">
             <Button variant="outline" disabled className="text-gray-400">Loading...</Button>
           </div>
@@ -34,7 +32,6 @@ export function Navbar() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-md shadow-sm">
       <div className="flex h-16 items-center w-full">
-        {/* Logo and navigation links together at the left */}
         <div className="flex items-center">
           {/* Logo */}
           <div className="px-4">
@@ -47,7 +44,7 @@ export function Navbar() {
             </Link>
           </div>
           
-          {/* Navigation links right next to logo */}
+          {/* Navigation links */}
           <div className="hidden md:flex items-center">
             <NavLink to="/movies">Movies</NavLink>
             <NavLink to="/directors">Directors</NavLink>
@@ -66,7 +63,7 @@ export function Navbar() {
           </div>
         </div>
         
-        {/* Auth buttons pinned to right edge */}
+        {/* Auth buttons */}
         <div className="flex items-center ml-auto px-4">
           {!isAuthenticated ? (
             <Button 

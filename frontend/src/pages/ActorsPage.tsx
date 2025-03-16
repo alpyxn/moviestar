@@ -43,9 +43,8 @@ export default function ActorsPage() {
   // Infinite scroll states
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const ACTORS_PER_BATCH = 8; // Same as previous pageSize
+  const ACTORS_PER_BATCH = 8; 
   
-  // Ref for infinite scroll observer
   const observerRef = useRef<HTMLDivElement>(null);
   
   const { toast } = useToast();
@@ -66,7 +65,6 @@ export default function ActorsPage() {
         if (!isMounted) return;
         setActors(data);
         
-        // Also set filtered and displayed actors immediately
         setFilteredActors(data);
         setDisplayedActors(data.slice(0, ACTORS_PER_BATCH));
         setHasMore(data.length > ACTORS_PER_BATCH);
@@ -102,7 +100,6 @@ export default function ActorsPage() {
       setFilteredActors(filtered);
     }
     
-    // Reset displayed actors when filter changes
     setDisplayedActors(_prev => {
       const initialActors = filteredActors.slice(0, ACTORS_PER_BATCH);
       return initialActors;
@@ -110,7 +107,6 @@ export default function ActorsPage() {
     setHasMore(filteredActors.length > ACTORS_PER_BATCH);
   }, [searchTerm, actors]);
   
-  // Set up intersection observer for infinite scroll
   useEffect(() => {
     if (!observerRef.current || !hasMore || !filteredActors.length || loadingMore || loading) return;
     
@@ -127,13 +123,11 @@ export default function ActorsPage() {
     return () => observer.disconnect();
   }, [hasMore, loadingMore, loading, displayedActors.length, filteredActors.length]);
   
-  // Load more actors function
   const loadMoreActors = useCallback(() => {
     if (loadingMore || !hasMore) return;
     
     setLoadingMore(true);
     
-    // Short timeout to allow loading indicator to show
     setTimeout(() => {
       const currentCount = displayedActors.length;
       const nextBatch = filteredActors.slice(currentCount, currentCount + ACTORS_PER_BATCH);
@@ -142,7 +136,6 @@ export default function ActorsPage() {
         setDisplayedActors(prev => [...prev, ...nextBatch]);
       }
       
-      // Check if we've displayed all filtered actors
       setHasMore(currentCount + nextBatch.length < filteredActors.length);
       setLoadingMore(false);
     }, 300);
@@ -151,13 +144,11 @@ export default function ActorsPage() {
   const handleDeleteActor = async (actorId: number) => {
     try {
       await adminApi.deleteActor(actorId);
-      // Keep toast for admin action
       toast({
         title: "Success",
         description: "Actor deleted successfully",
       });
       
-      // Define the fetchActors function inline to refresh the list
       const fetchActorsAfterDelete = async () => {
         try {
           const data = await actorsApi.getAll();
@@ -171,10 +162,8 @@ export default function ActorsPage() {
         }
       };
       
-      // Call the newly defined function
       fetchActorsAfterDelete();
     } catch (error) {
-      // Keep error toast for admin action
       toast({
         title: "Error",
         description: "Failed to delete actor. The actor may be associated with movies.",

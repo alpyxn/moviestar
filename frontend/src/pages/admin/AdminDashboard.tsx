@@ -6,7 +6,7 @@ import {
   BarChart2, Settings, Plus 
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useKeycloak } from '@react-keycloak/web'; // Add this import
+import { useKeycloak } from '@react-keycloak/web'; 
 import moviesApi from "@/api/movieApi";
 import actorsApi from "@/api/actorsApi";
 import directorsApi from "@/api/directorsApi";
@@ -20,7 +20,7 @@ export default function AdminDashboard() {
     genres: 0,
   });
   const [loading, setLoading] = useState(true);
-  const { keycloak, initialized } = useKeycloak(); // Add this line to get keycloak and initialized
+  const { keycloak, initialized } = useKeycloak(); 
 
   useEffect(() => {
     let isMounted = true;
@@ -33,7 +33,6 @@ export default function AdminDashboard() {
       try {
         setLoading(true);
         
-        // Ensure token is fresh before making admin requests
         if (keycloak.authenticated) {
           try {
             await keycloak.updateToken(30);
@@ -70,7 +69,7 @@ export default function AdminDashboard() {
     return () => {
       isMounted = false;
     };
-  }, [initialized, keycloak.authenticated]);  // Proper dependencies
+  }, [initialized, keycloak.authenticated]);  
 
   return (
     <div className="container mx-auto px-4 py-8">

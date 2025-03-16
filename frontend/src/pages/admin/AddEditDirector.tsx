@@ -20,7 +20,6 @@ import * as z from "zod";
 import { useToast } from '@/hooks/use-toast';
 import { Uploader } from '@/components/uploader';
 
-// Form validation schema
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
   surname: z.string().min(1, "Surname is required"),
@@ -32,7 +31,6 @@ const formSchema = z.object({
 type FormSchema = z.infer<typeof formSchema>;
 
 export default function AddEditDirector() {
-  // Get the director ID from URL if in edit mode
   const { id } = useParams<{ id: string }>();
   const isEditMode = !!id;
   const directorId = isEditMode ? parseInt(id) : undefined;
@@ -43,7 +41,6 @@ export default function AddEditDirector() {
   const navigate = useNavigate();
   const { keycloak, initialized } = useKeycloak();
   
-  // Initialize form
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -56,7 +53,6 @@ export default function AddEditDirector() {
     mode: "onSubmit",
   });
 
-  // Function to manually refresh token before API calls
   const ensureValidToken = async () => {
     if (!initialized) return false;
     if (!keycloak.authenticated) {
@@ -65,7 +61,6 @@ export default function AddEditDirector() {
     }
     
     try {
-      // Try to update token with 60 seconds minimum validity
       const refreshed = await keycloak.updateToken(60);
       if (!refreshed) {
         console.log("Token still valid, no refresh needed");
@@ -78,7 +73,6 @@ export default function AddEditDirector() {
     }
   };
 
-  // Fetch director data when in edit mode
   useEffect(() => {
     const fetchDirectorData = async () => {
       if (!isEditMode || !directorId) return;
@@ -87,11 +81,9 @@ export default function AddEditDirector() {
         setLoading(true);
         const director = await directorsApi.getById(directorId);
         
-        // Format date to YYYY-MM-DD for the date input
         const formattedBirthDay = director.birthDay ? 
           new Date(director.birthDay).toISOString().split('T')[0] : '';
         
-        // Pre-populate form with director data
         form.reset({
           name: director.name || '',
           surname: director.surname || '',
@@ -115,14 +107,12 @@ export default function AddEditDirector() {
   }, [directorId, form, isEditMode, toast]);
 
   const onSubmit = async (data: FormSchema) => {
-    // Ensure valid token before submitting
     const tokenValid = await ensureValidToken();
     if (!tokenValid) return;
     
     try {
       setSubmitting(true);
       
-      // Create the director payload
       const directorPayload: CreateActorDirectorPayload = {
         name: data.name,
         surname: data.surname,
@@ -132,14 +122,12 @@ export default function AddEditDirector() {
       };
       
       if (isEditMode && directorId) {
-        // Update existing director
         await adminApi.updateDirector(directorId, directorPayload);
         toast({
           title: "Success!",
           description: "Director has been updated successfully",
         });
       } else {
-        // Create new director
         await adminApi.createDirector(directorPayload);
         toast({
           title: "Success!",
@@ -147,12 +135,10 @@ export default function AddEditDirector() {
         });
       }
       
-      // Redirect to the directors list page
       navigate('/directors');
     } catch (error: unknown) {
       console.error(`Error ${isEditMode ? 'updating' : 'creating'} director:`, error);
       
-      // Enhanced error logging
       if ((error as any).response) {
         console.error('Server response error:', {
           status: (error as any).response.status,
@@ -179,7 +165,6 @@ export default function AddEditDirector() {
         });
       }
       
-      // If authentication error, redirect to login
       if ((error as any).response?.status === 401) {
         keycloak.login();
       }
@@ -223,7 +208,6 @@ export default function AddEditDirector() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Basic Information */}
                 <FormField
                   control={form.control}
                   name="name"
@@ -297,7 +281,7 @@ export default function AddEditDirector() {
                         defaultImage={field.value}
                         className="mt-2"
                         id="profile-upload"
-                        aspectRatio="square" // Square aspect ratio for profile photos
+                        aspectRatio="square" 
                       />
                     </FormControl>
                     <FormMessage />

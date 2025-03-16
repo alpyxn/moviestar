@@ -1,10 +1,8 @@
 import { publicApiClient } from './apiClient';
 import { Actor, Movie } from './apiService';
 
-/**
- * API service for actor-related endpoints
- */
 const actorsApi = {
+
   /**
    * Get all actors - public endpoint
    */

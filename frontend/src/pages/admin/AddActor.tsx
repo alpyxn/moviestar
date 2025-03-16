@@ -19,7 +19,6 @@ import * as z from "zod";
 import { useToast } from '@/hooks/use-toast';
 import { Uploader } from '@/components/uploader';
 
-// Form validation schema
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
   surname: z.string().min(1, "Surname is required"),
@@ -36,7 +35,6 @@ export default function AddActor() {
   const navigate = useNavigate();
   const { keycloak, initialized } = useKeycloak();
   
-  // Initialize form
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -49,7 +47,6 @@ export default function AddActor() {
     mode: "onSubmit",
   });
 
-  // Function to manually refresh token before API calls
   const ensureValidToken = async () => {
     if (!initialized) return false;
     if (!keycloak.authenticated) {

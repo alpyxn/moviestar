@@ -24,7 +24,6 @@ export function ActiveFilters({
   setFilters
 }: ActiveFiltersProps) {
   
-  // Reset rating filter
   const resetRatingFilter = () => {
     setFilters(prev => ({
       ...prev,

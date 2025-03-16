@@ -26,7 +26,6 @@ import * as z from "zod";
 import { useToast } from '@/hooks/use-toast';
 import { Uploader } from '@/components/uploader';
 
-// Form validation schema
 const formSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().min(10, "Description must be at least 10 characters"),
@@ -53,7 +52,6 @@ export default function AddEditMovie() {
   const [loading, setLoading] = useState<boolean>(true);
   const [submitting, setSubmitting] = useState<boolean>(false);
   
-  // Dialog state
   const [actorDialogOpen, setActorDialogOpen] = useState(false);
   const [directorDialogOpen, setDirectorDialogOpen] = useState(false);
   const [actorSearch, setActorSearch] = useState("");
@@ -65,7 +63,6 @@ export default function AddEditMovie() {
   const navigate = useNavigate();
   const { keycloak, initialized } = useKeycloak();
   
-  // Initialize form with default values
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -81,7 +78,6 @@ export default function AddEditMovie() {
     mode: "onSubmit",
   });
 
-  // Function to manually refresh token before API calls
   const ensureValidToken = async () => {
     if (!initialized) return false;
     if (!keycloak.authenticated) {
@@ -102,31 +98,26 @@ export default function AddEditMovie() {
     }
   };
 
-  // Filter actors based on search term
   const filteredActors = actors.filter(actor => 
     `${actor.name} ${actor.surname}`.toLowerCase().includes(actorSearch.toLowerCase())
   );
 
-  // Filter directors based on search term
   const filteredDirectors = directors.filter(director => 
     `${director.name} ${director.surname}`.toLowerCase().includes(directorSearch.toLowerCase())
   );
 
-  // Handle actor selection dialog confirm
   const handleActorSelectionConfirm = () => {
     const actorIds = selectedActors.map(actor => actor.id);
     form.setValue("actorIds", actorIds);
     setActorDialogOpen(false);
   };
 
-  // Handle director selection dialog confirm
   const handleDirectorSelectionConfirm = () => {
     const directorIds = selectedDirectors.map(director => director.id);
     form.setValue("directorIds", directorIds);
     setDirectorDialogOpen(false);
   };
 
-  // Toggle actor selection
   const toggleActorSelection = (actor: Actor) => {
     setSelectedActors(prevSelected => {
       if (prevSelected.some(a => a.id === actor.id)) {
@@ -137,7 +128,6 @@ export default function AddEditMovie() {
     });
   };
 
-  // Toggle director selection
   const toggleDirectorSelection = (director: Director) => {
     setSelectedDirectors(prevSelected => {
       if (prevSelected.some(d => d.id === director.id)) {
@@ -148,21 +138,18 @@ export default function AddEditMovie() {
     });
   };
 
-  // Remove actor from selection
   const removeActor = (actorId: number) => {
     setSelectedActors(selectedActors.filter(actor => actor.id !== actorId));
     const updatedActorIds = form.getValues("actorIds").filter(id => id !== actorId);
     form.setValue("actorIds", updatedActorIds);
   };
 
-  // Remove director from selection
   const removeDirector = (directorId: number) => {
     setSelectedDirectors(selectedDirectors.filter(director => director.id !== directorId));
     const updatedDirectorIds = form.getValues("directorIds").filter(id => id !== directorId);
     form.setValue("directorIds", updatedDirectorIds);
   };
 
-  // Fetch form data and movie details if in edit mode
   useEffect(() => {
     let mounted = true;
     
@@ -175,7 +162,6 @@ export default function AddEditMovie() {
       try {
         setLoading(true);
         
-        // Check token before making admin API calls
         if (keycloak.authenticated) {
           try {
             await keycloak.updateToken(30);
@@ -186,7 +172,6 @@ export default function AddEditMovie() {
           }
         }
         
-        // Fetch all necessary data
         const [genresData, actorsData, directorsData] = await Promise.all([
           adminApi.getGenres(),
           adminApi.getActors(),
@@ -199,7 +184,6 @@ export default function AddEditMovie() {
         setActors(actorsData);
         setDirectors(directorsData);
         
-        // If in edit mode, fetch the movie details
         if (isEditMode && movieId) {
           console.log(`Fetching movie data for ID: ${movieId}`);
           try {
@@ -208,7 +192,6 @@ export default function AddEditMovie() {
             
             if (!mounted) return;
             
-            // Set the selected actors and directors
             if (movieData.actors) {
               setSelectedActors(movieData.actors);
             }
@@ -217,7 +200,6 @@ export default function AddEditMovie() {
               setSelectedDirectors(movieData.directors);
             }
             
-            // Pre-populate form with movie data
             form.reset({
               title: movieData.title || "",
               description: movieData.description || "",
@@ -257,21 +239,18 @@ export default function AddEditMovie() {
 
     fetchData();
     
-    // Cleanup function
     return () => {
       mounted = false;
     };
-  }, [initialized, isEditMode, movieId, form]);  // Dependencies cleaned up
+  }, [initialized, isEditMode, movieId, form]);  
 
   const onSubmit = async (data: FormSchema) => {
-    // Ensure valid token before submitting
     const tokenValid = await ensureValidToken();
     if (!tokenValid) return;
     
     try {
       setSubmitting(true);
       
-      // Create the movie payload
       const moviePayload: CreateMoviePayload = {
         title: data.title,
         description: data.description,
@@ -284,14 +263,12 @@ export default function AddEditMovie() {
       };
       
       if (isEditMode && movieId) {
-        // Update existing movie
         await adminApi.updateMovie(movieId, moviePayload);
         toast({
           title: "Success!",
           description: "Movie has been updated successfully",
         });
       } else {
-        // Create new movie
         await adminApi.createMovie(moviePayload);
         toast({
           title: "Success!",
@@ -299,7 +276,6 @@ export default function AddEditMovie() {
         });
       }
       
-      // Redirect to the movies list page
       navigate('/movies');
     } catch (error: unknown) {
       console.error(`Error ${isEditMode ? 'updating' : 'creating'} movie:`, error);
@@ -309,7 +285,6 @@ export default function AddEditMovie() {
         variant: "destructive"
       });
       
-      // If authentication error, redirect to login
       if ((error as any).response?.status === 401) {
         keycloak.login();
       }
@@ -354,7 +329,6 @@ export default function AddEditMovie() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-6">
-                  {/* Basic Information */}
                   <FormField
                     control={form.control}
                     name="title"

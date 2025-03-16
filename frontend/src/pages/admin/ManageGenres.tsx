@@ -41,7 +41,6 @@ export default function ManageGenres() {
   const { toast } = useToast();
   const { keycloak, initialized } = useKeycloak();
 
-  // Fetch genres on component mount
   useEffect(() => {
     fetchGenres();
   }, []);
@@ -143,7 +142,6 @@ export default function ManageGenres() {
           <CardTitle>Manage Genres</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Add New Genre Form */}
           <div className="flex gap-2 mb-6">
             <Input
               placeholder="Enter new genre"

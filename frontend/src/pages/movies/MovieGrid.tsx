@@ -32,29 +32,23 @@ export function MovieGrid({ movies, isAdmin, navigate, setDeleteMovieId }: Movie
   const isAuthenticated = initialized && keycloak.authenticated;
   const { toast } = useToast();
   
-  // Track which movies are being added to watchlist
   const [addingToWatchlist, setAddingToWatchlist] = useState<Record<number, boolean>>({});
-  // Track watchlist status for movies
   const [watchlistStatus, setWatchlistStatus] = useState<Record<number, boolean>>({});
   
-  // Fetch watchlist statuses with added robustness
   const fetchWatchlistStatuses = useCallback(async () => {
     if (!isAuthenticated) return;
     
     try {
       console.log('MovieGrid: Fetching watchlist statuses for', movies.length, 'movies');
       
-      // Extract all movie IDs
       const movieIds = movies.map(movie => movie.id);
       
       if (movieIds.length === 0) return;
       
-      // Use our client-side batch check method with improved error handling
       const statuses = await watchlistApi.batchCheckWatchlistStatus(movieIds);
       
       console.log('MovieGrid - Final watchlist statuses:', statuses);
       
-      // Only update state if we got results
       if (Object.keys(statuses).length > 0) {
         setWatchlistStatus(statuses);
       } else {
@@ -65,12 +59,10 @@ export function MovieGrid({ movies, isAdmin, navigate, setDeleteMovieId }: Movie
     }
   }, [movies, isAuthenticated]);
   
-  // Check watchlist status when movies change or auth state changes
   useEffect(() => {
     fetchWatchlistStatuses();
   }, [fetchWatchlistStatuses]);
   
-  // Handle adding to watchlist with improved sync
   const handleAddToWatchlist = async (movieId: number, event: React.MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
@@ -86,16 +78,13 @@ export function MovieGrid({ movies, isAdmin, navigate, setDeleteMovieId }: Movie
       const currentStatus = watchlistStatus[movieId];
       
       if (currentStatus) {
-        // Remove from watchlist
         await watchlistApi.removeFromWatchlist(movieId);
         setWatchlistStatus(prev => ({ ...prev, [movieId]: false }));
       } else {
-        // Add to watchlist
         await watchlistApi.addToWatchlist(movieId);
         setWatchlistStatus(prev => ({ ...prev, [movieId]: true }));
       }
       
-      // Re-fetch all statuses to ensure consistency
       await fetchWatchlistStatuses();
     } catch (error) {
       console.error('Error updating watchlist:', error);
@@ -105,7 +94,6 @@ export function MovieGrid({ movies, isAdmin, navigate, setDeleteMovieId }: Movie
         variant: 'destructive',
       });
       
-      // Restore previous state on error
       await fetchWatchlistStatuses();
     } finally {
       setAddingToWatchlist(prev => ({ ...prev, [movieId]: false }));

@@ -6,19 +6,15 @@ export const LoginCheck: React.FC<{ children: React.ReactNode }> = ({ children }
   const { keycloak, initialized } = useKeycloak();
   
   useEffect(() => {
-    // Only run once when component mounts
     const validateToken = async () => {
       try {
         if (initialized && keycloak.authenticated) {
-          // Check if token can be refreshed
           await keycloak.updateToken(50);
         } else if (initialized) {
-          // Not authenticated, force login
           keycloak.login({ redirectUri: window.location.href });
         }
       } catch (error) {
         console.error("Failed to refresh token:", error);
-        // Force a clean login
         keycloak.logout();
       }
     };
@@ -45,6 +41,5 @@ export const LoginCheck: React.FC<{ children: React.ReactNode }> = ({ children }
     );
   }
   
-  // We're authenticated and ready to proceed
   return <>{children}</>;
 };

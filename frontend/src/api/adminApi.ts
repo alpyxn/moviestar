@@ -8,14 +8,12 @@ import {
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
 
-// Improved token refresh handling
 let isRefreshing = false;
 let refreshQueue: Array<{
   resolve: (token: string) => void;
   reject: (error: any) => void;
 }> = [];
 
-// Process refresh queue
 const processQueue = (error: any | null = null, token: string | null = null) => {
   refreshQueue.forEach(promise => {
     if (error) {
@@ -28,9 +26,7 @@ const processQueue = (error: any | null = null, token: string | null = null) => 
   refreshQueue = [];
 };
 
-// Safely refresh the token
 const safeRefreshToken = async (): Promise<string> => {
-  // If we're already refreshing, queue this request
   if (isRefreshing) {
     return new Promise<string>((resolve, reject) => {
       refreshQueue.push({ resolve, reject });
@@ -57,16 +53,13 @@ const safeRefreshToken = async (): Promise<string> => {
   }
 };
 
-// Create axios instance with interceptors
 const adminClient = axios.create({
   baseURL: `${API_URL}/admin`,
 });
 
-// Request interceptor to add auth token
 adminClient.interceptors.request.use(async (config) => {
   try {
     if (keycloak.authenticated) {
-      // Always try to get a fresh token for admin requests
       const token = await safeRefreshToken();
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -76,25 +69,21 @@ adminClient.interceptors.request.use(async (config) => {
   }
 });
 
-// Response interceptor for handling 401s and other error cases
 adminClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
     
-    // Don't retry already retried requests to avoid infinite loops
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       
       try {
-        // Force token refresh on 401
         await keycloak.updateToken(0);
         
         if (keycloak.token) {
           originalRequest.headers.Authorization = `Bearer ${keycloak.token}`;
           return adminClient(originalRequest);
         } else {
-          // If we still don't have a token, redirect to login
           keycloak.login();
           return Promise.reject(new Error('Authentication required'));
         }
@@ -108,9 +97,7 @@ adminClient.interceptors.response.use(
   }
 );
 
-// Admin API service
 const adminApi = {
-  // Movies
   getMovies: async (): Promise<Movie[]> => {
     const response = await adminClient.get<Movie[]>('/movies');
     return response.data;
@@ -130,7 +117,6 @@ const adminApi = {
     await adminClient.delete(`/movies/${id}`);
   },
   
-  // Actors
   getActors: async (): Promise<Actor[]> => {
     const response = await adminClient.get<Actor[]>('/actors');
     return response.data;

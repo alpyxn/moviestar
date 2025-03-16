@@ -20,7 +20,6 @@ import * as z from "zod";
 import { useToast } from '@/hooks/use-toast';
 import { Uploader } from '@/components/uploader';
 
-// Form validation schema
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
   surname: z.string().min(1, "Surname is required"),
@@ -32,7 +31,6 @@ const formSchema = z.object({
 type FormSchema = z.infer<typeof formSchema>;
 
 export default function AddEditActor() {
-  // Get the actor ID from URL if in edit mode
   const { id } = useParams<{ id: string }>();
   const isEditMode = !!id;
   const actorId = isEditMode ? parseInt(id) : undefined;
@@ -44,7 +42,6 @@ export default function AddEditActor() {
   const navigate = useNavigate();
   const { keycloak, initialized } = useKeycloak();
   
-  // Initialize form
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -57,7 +54,6 @@ export default function AddEditActor() {
     mode: "onSubmit",
   });
 
-  // Function to manually refresh token before API calls
   const ensureValidToken = async () => {
     if (!initialized) return false;
     if (!keycloak.authenticated) {
@@ -66,7 +62,6 @@ export default function AddEditActor() {
     }
     
     try {
-      // Try to update token with 60 seconds minimum validity
       const refreshed = await keycloak.updateToken(60);
       if (!refreshed) {
         console.log("Token still valid, no refresh needed");
@@ -79,21 +74,17 @@ export default function AddEditActor() {
     }
   };
 
-  // Fetch actor data when in edit mode
   useEffect(() => {
     const fetchActorData = async () => {
-      // Skip if already loading, not in edit mode, or already fetched data
       if (loading || !isEditMode || !actorId || dataFetched) return;
       
       try {
         setLoading(true);
         const actor = await actorsApi.getById(actorId);
         
-        // Format date to YYYY-MM-DD for the date input
         const formattedBirthDay = actor.birthDay ? 
           new Date(actor.birthDay).toISOString().split('T')[0] : '';
         
-        // Pre-populate form with actor data
         form.reset({
           name: actor.name || '',
           surname: actor.surname || '',
@@ -102,7 +93,7 @@ export default function AddEditActor() {
           pictureUrl: actor.pictureUrl || ''
         });
         
-        setDataFetched(true); // Mark data as fetched
+        setDataFetched(true); 
       } catch (error) {
         console.error('Error fetching actor data:', error);
         toast({
@@ -116,17 +107,15 @@ export default function AddEditActor() {
     };
 
     fetchActorData();
-  }, [actorId, isEditMode, loading, dataFetched]); // Remove toast from dependencies, add dataFetched and loading
+  }, [actorId, isEditMode, loading, dataFetched]); 
 
   const onSubmit = async (data: FormSchema) => {
-    // Ensure valid token before submitting
     const tokenValid = await ensureValidToken();
     if (!tokenValid) return;
     
     try {
       setSubmitting(true);
       
-      // Create the actor payload
       const actorPayload: CreateActorDirectorPayload = {
         name: data.name,
         surname: data.surname,
@@ -136,14 +125,12 @@ export default function AddEditActor() {
       };
       
       if (isEditMode && actorId) {
-        // Update existing actor
         await adminApi.updateActor(actorId, actorPayload);
         toast({
           title: "Success!",
           description: "Actor has been updated successfully",
         });
       } else {
-        // Create new actor
         await adminApi.createActor(actorPayload);
         toast({
           title: "Success!",
@@ -151,12 +138,10 @@ export default function AddEditActor() {
         });
       }
       
-      // Redirect to the actors list page
       navigate('/actors');
     } catch (error: unknown) {
       console.error(`Error ${isEditMode ? 'updating' : 'creating'} actor:`, error);
       
-      // Enhanced error logging
       if ((error as any).response) {
         console.error('Server response error:', {
           status: (error as any).response.status,
@@ -183,7 +168,6 @@ export default function AddEditActor() {
         });
       }
       
-      // If authentication error, redirect to login
       if ((error as any).response?.status === 401) {
         keycloak.login();
       }
@@ -227,7 +211,6 @@ export default function AddEditActor() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Basic Information */}
                 <FormField
                   control={form.control}
                   name="name"
@@ -301,7 +284,7 @@ export default function AddEditActor() {
                         defaultImage={field.value}
                         className="mt-2"
                         id="profile-upload"
-                        aspectRatio="square" // Square aspect ratio for profile photos
+                        aspectRatio="square" 
                       />
                     </FormControl>
                     <FormMessage />

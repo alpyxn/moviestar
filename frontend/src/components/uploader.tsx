@@ -9,7 +9,7 @@ interface ImageUploadProps {
   className?: string;
   id?: string;
   aspectRatio?: 'vertical' | 'horizontal' | 'square';
-  placeholderText?: string; // New prop for custom placeholder text
+  placeholderText?: string; 
 }
 
 export function Uploader({ 
@@ -18,17 +18,15 @@ export function Uploader({
   className = '', 
   id = 'image-upload',
   aspectRatio = 'horizontal',
-  placeholderText // Added new prop
+  placeholderText 
 }: ImageUploadProps) {
   const [image, setImage] = useState<string | null>(defaultImage || null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [configValid, setConfigValid] = useState(true);
   
-  // Create unique ID for this uploader's input element
   const inputId = `${id}-input`;
 
-  // Validate Cloudinary configuration on component mount
   useEffect(() => {
     const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
     const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
@@ -40,16 +38,15 @@ export function Uploader({
     }
   }, []);
 
-  // Define aspect ratio styles
   const getAspectRatioClass = () => {
     switch (aspectRatio) {
       case 'vertical':
-        return 'aspect-[2/3] max-h-[450px]'; // Movie poster ratio (2:3)
+        return 'aspect-[2/3] max-h-[450px]'; 
       case 'square':
         return 'aspect-square max-h-[300px]';
       case 'horizontal':
       default:
-        return 'aspect-[16/9] max-h-[300px]'; // Backdrop ratio (16:9)
+        return 'aspect-[16/9] max-h-[300px]'; 
     }
   };
 
@@ -57,10 +54,8 @@ export function Uploader({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Reset any previous errors
     setError(null);
 
-    // Validate file type
     if (!file.type.includes('image/')) {
       setError('Please upload an image file');
       return;
@@ -79,11 +74,8 @@ export function Uploader({
     formData.append('file', file);
     formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
     
-    // Remove direct transformation parameter as it's not allowed in unsigned uploads
-    // Instead, rely on the upload_preset to have the transformations configured in Cloudinary
 
     try {
-      // Log the request params for debugging (without file content for brevity)
       console.log('Cloudinary upload request:', {
         cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME,
         uploadPreset: import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET,
@@ -99,7 +91,6 @@ export function Uploader({
           headers: {
             'Content-Type': 'multipart/form-data'
           },
-          // Increase timeout for larger images
           timeout: 30000
         }
       );
@@ -112,7 +103,6 @@ export function Uploader({
     } catch (err: any) {
       console.error('Upload failed:', err);
       
-      // Provide detailed error information
       const statusCode = err.response?.status;
       const cloudinaryError = err.response?.data?.error?.message;
       
@@ -126,7 +116,6 @@ export function Uploader({
         setError(`Failed to upload image: ${err.message || 'Unknown error'}`);
       }
       
-      // If there's a specific error from Cloudinary, log it
       if (err.response?.data) {
         console.error('Cloudinary error details:', err.response.data);
       }
@@ -183,12 +172,12 @@ export function Uploader({
         <Button 
           variant="outline" 
           onClick={(e) => {
-            e.preventDefault(); // Prevent form submission
+            e.preventDefault(); 
             document.getElementById(inputId)?.click();
           }}
           disabled={isUploading || !configValid}
           className="w-full"
-          type="button" // Explicitly set as button type to prevent form submission
+          type="button" 
         >
           {isUploading ? 'Uploading...' : 'Choose Image'}
         </Button>

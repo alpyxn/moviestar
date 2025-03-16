@@ -3,25 +3,15 @@ import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
 import { Loader2 } from 'lucide-react';
 
 interface InfiniteScrollProps {
-  // Function to call when more items should be loaded
   loadMore: () => Promise<void>;
-  // Whether there are more items to load
   hasMore: boolean;
-  // Whether the component is initially loading
   isLoading?: boolean;
-  // Children to render
   children: ReactNode;
-  // Optional className for the container
   className?: string;
-  // Optional className for the loader
   loaderClassName?: string;
-  // Custom loader component
   loader?: ReactNode;
-  // End message when there are no more items
   endMessage?: ReactNode;
-  // Whether to disable the infinite scroll
   disabled?: boolean;
-  // Threshold in pixels before the bottom to trigger loading
   threshold?: number;
 }
 
@@ -48,19 +38,16 @@ export const InfiniteScroll: React.FC<InfiniteScrollProps> = ({
     initialLoading: externalLoading || false,
   });
 
-  // Handle external loading state
   useEffect(() => {
     if (externalLoading !== undefined) {
       setIsLoading(externalLoading);
     }
   }, [externalLoading, setIsLoading]);
 
-  // Update hasMore from props
   useEffect(() => {
     setHasMore(hasMore);
   }, [hasMore, setHasMore]);
 
-  // Handle loadMore function with improved error handling
   useEffect(() => {
     const handleLoadMore = async () => {
       if (!isLoading && hasMore && !disabled) {
@@ -69,7 +56,6 @@ export const InfiniteScroll: React.FC<InfiniteScrollProps> = ({
           await loadMore();
         } catch (error) {
           console.error("Error loading more items:", error);
-          // Set hasMore to false if loading fails
           setHasMore(false);
         } finally {
           setIsLoading(false);
@@ -77,7 +63,6 @@ export const InfiniteScroll: React.FC<InfiniteScrollProps> = ({
       }
     };
 
-    // Add event listener to the ref element
     const currentRef = ref.current;
     if (currentRef) {
       const observer = new IntersectionObserver(

@@ -4,14 +4,12 @@ import { Actor, Director, Genre } from '@/api/apiService';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
 
-// We'll use a separate mechanism to track token refresh
 let isRefreshing = false;
 let failedQueue: Array<{
   resolve: (token: string) => void;
   reject: (error: any) => void;
 }> = [];
 
-// Process failed requests once token is refreshed
 const processQueue = (error: any, token: string | null = null) => {
   failedQueue.forEach(request => {
     if (error) {
@@ -24,7 +22,6 @@ const processQueue = (error: any, token: string | null = null) => {
   failedQueue = [];
 };
 
-// Main refresh function
 const refreshKeycloakToken = async (): Promise<string> => {
   if (isRefreshing) {
     return new Promise((resolve, reject) => {
@@ -53,12 +50,10 @@ const refreshKeycloakToken = async (): Promise<string> => {
   }
 };
 
-// Create an axios instance with interceptors
 const adminAxios = axios.create({
   baseURL: API_URL,
 });
 
-// Request interceptor to add auth token
 adminAxios.interceptors.request.use(async config => {
   if (keycloak.authenticated) {
     if (keycloak.isTokenExpired()) {
@@ -75,13 +70,11 @@ adminAxios.interceptors.request.use(async config => {
   return config;
 });
 
-// Response interceptor to handle 401s
 adminAxios.interceptors.response.use(
   response => response,
   async error => {
     const originalRequest = error.config;
     
-    // Handle 401 by refreshing token once
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       

@@ -67,30 +67,25 @@ export default function AdminUsers() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   
-  // Infinite scroll states
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const USERS_PER_BATCH = 20;
   
-  // Ref for infinite scroll observer
   const observerRef = useRef<HTMLDivElement>(null);
   
-  // State for ban/unban dialog
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [banDialogOpen, setBanDialogOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
-  const [isBanning, setIsBanning] = useState(false); // true for ban, false for unban
+  const [isBanning, setIsBanning] = useState(false); 
 
   const navigate = useNavigate();
   const { toast } = useToast();
   const { keycloak, initialized } = useKeycloak();
 
-  // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
   };
 
-  // Fetch users on component mount
   useEffect(() => {
     const fetchUsers = async () => {
       if (!initialized || !keycloak.authenticated) return;
@@ -98,7 +93,6 @@ export default function AdminUsers() {
       try {
         setLoading(true);
         
-        // Ensure token is fresh before making admin requests
         if (keycloak.authenticated) {
           try {
             await keycloak.updateToken(30);
@@ -113,11 +107,9 @@ export default function AdminUsers() {
         setUsers(allUsers);
         setFilteredUsers(allUsers);
         
-        // Initialize displayed users with first batch
         const initialUsers = allUsers.slice(0, USERS_PER_BATCH);
         setDisplayedUsers(initialUsers);
         
-        // Check if there are more users to show
         setHasMore(allUsers.length > USERS_PER_BATCH);
       } catch (error) {
         console.error('Error fetching users:', error);
@@ -134,20 +126,17 @@ export default function AdminUsers() {
     fetchUsers();
   }, [keycloak, initialized, toast]);
 
-  // Filter users when search query or status filter changes
   useEffect(() => {
     if (users.length === 0) return;
     
     let result = [...users];
     
-    // Apply status filter
     if (statusFilter === 'active') {
       result = result.filter(user => user.status === 'ACTIVE');
     } else if (statusFilter === 'banned') {
       result = result.filter(user => user.status === 'BANNED');
     }
     
-    // Apply search query filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       result = result.filter(user => 
@@ -158,13 +147,11 @@ export default function AdminUsers() {
     
     setFilteredUsers(result);
     
-    // Reset displayed users when filter changes
     const initialUsers = result.slice(0, USERS_PER_BATCH);
     setDisplayedUsers(initialUsers);
     setHasMore(result.length > USERS_PER_BATCH);
   }, [users, searchQuery, statusFilter]);
   
-  // Set up intersection observer for infinite scroll
   useEffect(() => {
     if (!observerRef.current || !hasMore || loadingMore || loading) return;
     
@@ -181,13 +168,11 @@ export default function AdminUsers() {
     return () => observer.disconnect();
   }, [hasMore, loadingMore, loading, displayedUsers.length]);
   
-  // Load more users function
   const loadMoreUsers = useCallback(() => {
     if (loadingMore || !hasMore) return;
     
     setLoadingMore(true);
     
-    // Short timeout to allow loading indicator to show
     setTimeout(() => {
       const currentCount = displayedUsers.length;
       const nextBatch = filteredUsers.slice(currentCount, currentCount + USERS_PER_BATCH);
@@ -196,13 +181,11 @@ export default function AdminUsers() {
         setDisplayedUsers(prev => [...prev, ...nextBatch]);
       }
       
-      // Check if we've displayed all filtered users
       setHasMore(currentCount + nextBatch.length < filteredUsers.length);
       setLoadingMore(false);
     }, 300);
   }, [loadingMore, hasMore, displayedUsers.length, filteredUsers]);
 
-  // Format date helper function
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
     try {
@@ -212,25 +195,21 @@ export default function AdminUsers() {
     }
   };
 
-  // Get user initials for avatar
   const getUserInitials = (username: string): string => {
     return username.charAt(0).toUpperCase();
   };
 
-  // Handle opening ban dialog
   const handleOpenBanDialog = (user: User, shouldBan: boolean) => {
     setSelectedUser(user);
     setIsBanning(shouldBan);
     setBanDialogOpen(true);
   };
 
-  // Handle ban/unban action
   const handleBanAction = async () => {
     if (!selectedUser) return;
     
     setActionLoading(true);
     try {
-      // Ensure token is fresh before making admin requests
       if (keycloak.authenticated) {
         try {
           await keycloak.updateToken(30);
@@ -260,7 +239,6 @@ export default function AdminUsers() {
         });
       }
       
-      // Update the user in the list
       const updatedUsers = users.map(user => {
         if (user.username === selectedUser.username) {
           return { ...user, status: isBanning ? 'BANNED' : 'ACTIVE' };
@@ -292,7 +270,6 @@ export default function AdminUsers() {
     );
   }
 
-  // Check if user is admin
   const isAdmin = keycloak.hasRealmRole('ADMIN');
   
   if (!isAdmin) {

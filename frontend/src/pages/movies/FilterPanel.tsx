@@ -39,41 +39,33 @@ export function FilterPanel({
   handleGenreToggle,
   handleRatingRangeChange,
   resetFilters,
-  setFilters,
   inCard = false,
 }: FilterPanelProps) {
   const [minRating, setMinRating] = useState(filters.ratingRange[0].toString());
   const [maxRating, setMaxRating] = useState(filters.ratingRange[1].toString());
 
-  // Update the internal state when filters change from outside
   useEffect(() => {
     setMinRating(filters.ratingRange[0].toString());
     setMaxRating(filters.ratingRange[1].toString());
   }, [filters.ratingRange]);
 
-  // Handle manual input for min rating
   const handleMinRatingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setMinRating(value);
     
-    // Only update the filter if we have a valid number
     const numValue = parseFloat(value);
     if (!isNaN(numValue) && numValue >= 0 && numValue <= 10) {
-      // Ensure max is not less than min
       const newMax = Math.max(numValue, filters.ratingRange[1]);
       handleRatingRangeChange([numValue, newMax]);
     }
   };
 
-  // Handle manual input for max rating
   const handleMaxRatingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setMaxRating(value);
     
-    // Only update the filter if we have a valid number
     const numValue = parseFloat(value);
     if (!isNaN(numValue) && numValue >= 0 && numValue <= 10) {
-      // Ensure min is not greater than max
       const newMin = Math.min(filters.ratingRange[0], numValue);
       handleRatingRangeChange([newMin, numValue]);
     }
@@ -105,7 +97,7 @@ export function FilterPanel({
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      onClick={() => handleGenreToggle(-1)} // Special case to clear all
+                      onClick={() => handleGenreToggle(-1)} 
                       className="h-7 px-2 text-xs text-rose-600 hover:text-rose-700"
                     >
                       Clear selection
@@ -206,7 +198,6 @@ export function FilterPanel({
         </div>
       </div>
 
-      {/* Reset filters button */}
       <Button 
         variant="outline" 
         onClick={resetFilters}
@@ -218,7 +209,6 @@ export function FilterPanel({
     </div>
   );
 
-  // If inCard is true, wrap in Card component
   if (inCard) {
     return (
       <Card className="sticky top-4">
@@ -242,6 +232,5 @@ export function FilterPanel({
     );
   }
 
-  // Otherwise, return just the content
   return filterContent;
 }

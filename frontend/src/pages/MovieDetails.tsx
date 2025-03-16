@@ -31,7 +31,6 @@ import MovieCastCrew from '@/components/movie/MovieCastCrew';
 import CommentsSection from '@/components/movie/CommentsSection';
 import MovieSidebar from '@/components/movie/MovieSidebar';
 
-// Helper function to sort comments
 const sortComments = (
   comments: Comment[], 
   currentUsername: string | undefined, 
@@ -48,14 +47,11 @@ const sortComments = (
       new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
   } else if (sortBy === 'likes') {
-    // Always show the user's own comments first for likes sort
     return sorted.sort((a, b) => {
-      // First prioritize user's own comments
       if (currentUsername) {
         if (a.username === currentUsername && b.username !== currentUsername) return -1;
         if (a.username !== currentUsername && b.username === currentUsername) return 1;
       }
-      // Only then sort by likes
       return (b.likesCount || 0) - (a.likesCount || 0);
     });
   }
@@ -167,7 +163,6 @@ export default function MovieDetails() {
     };
   }, [movie]);
 
-  // Fetch movie data and first page of comments
   useEffect(() => {
     let isMounted = true;
 
@@ -194,14 +189,12 @@ export default function MovieDetails() {
           genres: movieData.genres || [],
         });
 
-        // Apply custom sorting after fetching comments
         const username = keycloak.tokenParsed?.preferred_username;
         const sortedComments = sortComments(commentsData, username, commentSortBy);
         setComments(sortedComments);
         
         setHasMoreComments(commentsData.length === COMMENTS_PER_PAGE);
 
-        // If user is authenticated, fetch user-specific data
         if (isAuthenticated) {
           try {
             const [status, userRating] = await Promise.all([
@@ -213,7 +206,6 @@ export default function MovieDetails() {
             setWatchlistStatus(status);
             setUserRating(userRating);
             
-            // Fetch like statuses for comments
             const statuses: Record<number, LikeStatus> = {};
             await Promise.all(
               commentsData.map(async (comment) => {
@@ -256,7 +248,6 @@ export default function MovieDetails() {
     };
   }, [movieId, isAuthenticated, commentSortBy, keycloak.tokenParsed, toast]);
 
-  // Load more comments function
   const loadMoreComments = useCallback(async () => {
     if (!movieId || !hasMoreComments || loadingMoreComments) return;
     
@@ -275,7 +266,6 @@ export default function MovieDetails() {
         return;
       }
 
-      // Apply custom sorting after fetching more comments
       const allComments = [...comments, ...newComments];
       const username = keycloak.tokenParsed?.preferred_username;
       const sortedComments = sortComments(allComments, username, commentSortBy);
@@ -284,7 +274,6 @@ export default function MovieDetails() {
       setCommentPage(nextPage);
       setHasMoreComments(newComments.length === COMMENTS_PER_PAGE);
 
-      // If user is authenticated, fetch like statuses for new comments
       if (isAuthenticated) {
         const statuses = { ...commentLikeStatuses };
         await Promise.all(
@@ -324,14 +313,12 @@ export default function MovieDetails() {
       setLoadingMoreComments(true);
       const commentsData = await moviesApi.getComments(movieId, sortBy, 1, COMMENTS_PER_PAGE);
       
-      // Apply custom sorting
       const username = keycloak.tokenParsed?.preferred_username;
       const sortedComments = sortComments(commentsData, username, sortBy);
       setComments(sortedComments);
       
       setHasMoreComments(commentsData.length === COMMENTS_PER_PAGE);
       
-      // Update like statuses if authenticated
       if (isAuthenticated) {
         const statuses: Record<number, LikeStatus> = {};
         await Promise.all(
@@ -362,7 +349,6 @@ export default function MovieDetails() {
   const handleDeleteMovie = async () => {
     if (!isAdmin || !movieId) return;
     try {
-      // Ensure token is fresh before making admin requests
       if (keycloak.authenticated) {
         try {
           await keycloak.updateToken(30);
@@ -403,18 +389,15 @@ export default function MovieDetails() {
       setSubmittingComment(true);
       await moviesApi.addComment(movieId, text);
       
-      // Reset and reload comments
       setCommentPage(1);
       const newComments = await moviesApi.getComments(movieId, commentSortBy, 1, COMMENTS_PER_PAGE);
       
-      // Apply custom sorting
       const username = keycloak.tokenParsed?.preferred_username;
       const sortedComments = sortComments(newComments, username, commentSortBy);
       setComments(sortedComments);
       
       setHasMoreComments(newComments.length === COMMENTS_PER_PAGE);
       
-      // Update like statuses
       if (isAuthenticated) {
         const statuses: Record<number, LikeStatus> = {};
         await Promise.all(
@@ -436,7 +419,6 @@ export default function MovieDetails() {
     }
   };
   
-  // Comment reaction handler - make sure it returns a Promise
   const handleCommentReaction = async (commentId: number, isLike: boolean): Promise<void> => {
     if (!isAuthenticated) {
       keycloak.login();
@@ -447,7 +429,6 @@ export default function MovieDetails() {
       setIsSubmittingLike(commentId);
       const currentStatus = commentLikeStatuses[commentId] || { liked: false, disliked: false };
       
-      // If trying to set the same state, remove the reaction
       if ((isLike && currentStatus.liked) || (!isLike && currentStatus.disliked)) {
         await moviesApi.removeCommentReaction(commentId);
         setCommentLikeStatuses({
@@ -455,7 +436,6 @@ export default function MovieDetails() {
           [commentId]: { liked: false, disliked: false }
         });
       } else {
-        // Otherwise, set the new reaction
         await moviesApi.likeComment(commentId, isLike);
         setCommentLikeStatuses({
           ...commentLikeStatuses,
@@ -463,7 +443,6 @@ export default function MovieDetails() {
         });
       }
       
-      // Refresh comments to get updated like counts and re-sort
       const updatedComments = await moviesApi.getComments(movieId, commentSortBy);
       const username = keycloak.tokenParsed?.preferred_username;
       const sortedComments = sortComments(updatedComments, username, commentSortBy);
@@ -475,20 +454,17 @@ export default function MovieDetails() {
     }
   };
   
-  // Rating handler
   const handleRateMovie = async (rating: number) => {
     if (!isAuthenticated) {
       keycloak.login();
       return;
     }
 
-    // If user clicks the same rating, remove it
     if (rating === userRating) {
       try {
         setIsRating(true);
         await moviesApi.removeRating(movieId);
         setUserRating(null);
-        // Refresh movie data to get updated ratings
         const updatedMovie = await moviesApi.getById(movieId);
         setMovie(updatedMovie);
       } catch (error) {
@@ -499,12 +475,10 @@ export default function MovieDetails() {
       return;
     }
     
-    // Otherwise, set or update the rating
     try {
       setIsRating(true);
       await moviesApi.rateMovie(movieId, rating);
       setUserRating(rating);
-      // Refresh movie data to get updated ratings
       const updatedMovie = await moviesApi.getById(movieId);
       setMovie(updatedMovie);
     } catch (error) {
@@ -514,7 +488,6 @@ export default function MovieDetails() {
     }
   };
   
-  // Watchlist toggle handler
   const handleWatchlistToggle = async () => {
     if (!isAuthenticated) {
       keycloak.login();
@@ -537,13 +510,11 @@ export default function MovieDetails() {
     }
   };
   
-  // Edit comment handler - make sure it returns Promise<void> to match expected type
   const handleEditComment = async (commentId: number, text: string): Promise<void> => {
     if (!isAuthenticated) return;
     
     try {
       await moviesApi.updateComment(commentId, text);
-      // Refresh comments
       const updatedComments = await moviesApi.getComments(movieId, commentSortBy);
       const username = keycloak.tokenParsed?.preferred_username;
       const sortedComments = sortComments(updatedComments, username, commentSortBy);
@@ -553,12 +524,10 @@ export default function MovieDetails() {
     }
   };
   
-  // Delete comment handler
   const handleDeleteComment = async (commentId: number) => {
     setDeleteCommentId(commentId);
   };
   
-  // Execute comment deletion
   const executeCommentDeletion = async () => {
     if (!deleteCommentId) return;
     
@@ -566,7 +535,6 @@ export default function MovieDetails() {
       setIsDeletingComment(true);
       
       if (isAdmin) {
-        // Ensure token is fresh before admin action
         if (keycloak.authenticated) {
           try {
             await keycloak.updateToken(30);
@@ -585,7 +553,6 @@ export default function MovieDetails() {
         await moviesApi.deleteComment(deleteCommentId);
       }
       
-      // Refresh comments
       const updatedComments = await moviesApi.getComments(movieId, commentSortBy, 1, COMMENTS_PER_PAGE);
       const username = keycloak.tokenParsed?.preferred_username;
       const sortedComments = sortComments(updatedComments, username, commentSortBy);
@@ -613,7 +580,6 @@ export default function MovieDetails() {
     const fetchUserProfiles = async () => {
       try {
         setLoadingUserProfiles(true);
-        // Get unique usernames that we don't already have profiles for
         const usernamesToFetch = comments
           .map(comment => comment.username)
           .filter((username, index, self) => 
@@ -622,7 +588,6 @@ export default function MovieDetails() {
 
         if (!usernamesToFetch.length) return;
 
-        // Fetch profiles for these users using public client
         const profiles = await userApi.getUserProfiles(usernamesToFetch);
         
         if (Object.keys(profiles).length > 0) {
@@ -638,7 +603,6 @@ export default function MovieDetails() {
     fetchUserProfiles();
   }, [comments, commentUsers, loadingUserProfiles]);
   
-  // Loading state
   if (loading) {
     return (
       <div className="flex justify-center items-center h-[70vh]">
@@ -648,7 +612,6 @@ export default function MovieDetails() {
     );
   }
 
-  // Movie not found state
   if (!movie) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
@@ -666,19 +629,16 @@ export default function MovieDetails() {
       {/* Hero Section */}
       <MovieHero 
         movie={movie} 
-        isAdmin={isAdmin || false} // Ensure boolean by providing default
+        isAdmin={isAdmin || false} 
         onDeleteClick={() => setDeleteMovieId(movieId)} 
       />
 
       {/* Content Section */}
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content - 2/3 width on large screens */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Synopsis */}
             <MovieSynopsis description={movie.description} />
 
-            {/* Cast and Crew */}
             <MovieCastCrew 
               actors={movie.actors || []} 
               directors={movie.directors || []} 
@@ -686,7 +646,6 @@ export default function MovieDetails() {
               directorImages={directorImages}
             />
 
-            {/* Comments Section - fix boolean props */}
             <CommentsSection 
               comments={comments}
               commentUsers={commentUsers}
@@ -696,7 +655,7 @@ export default function MovieDetails() {
               loadingMoreComments={loadingMoreComments}
               commentSortBy={commentSortBy}
               submittingComment={submittingComment}
-              isAdmin={!!isAdmin} // Ensure boolean with double negation
+              isAdmin={!!isAdmin} 
               onSortChange={handleSortComments}
               onLoadMoreComments={loadMoreComments}
               onLike={handleCommentReaction}
@@ -706,7 +665,6 @@ export default function MovieDetails() {
             />
           </div>
 
-          {/* Sidebar - 1/3 width on large screens */}
           <div className="space-y-6">
             <MovieSidebar 
               averageRating={movie.averageRating}
@@ -722,7 +680,6 @@ export default function MovieDetails() {
         </div>
       </div>
       
-      {/* Delete Movie Dialog */}
       <AlertDialog open={deleteMovieId !== null} onOpenChange={() => setDeleteMovieId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

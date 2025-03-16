@@ -17,7 +17,6 @@ export function KeycloakInitializer({ children }: KeycloakInitializerProps) {
   const [initialized, setInitialized] = useState(false);
   
   useEffect(() => {
-    // Only attempt to initialize once
     if (!initialized && !keycloak.authenticated) {
       setInitialized(true);
     }

@@ -21,9 +21,7 @@ export function UserAvatar({
   const [fetchedPictureUrl, setFetchedPictureUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   
-  // Fetch profile picture if not provided
   useEffect(() => {
-    // Skip if we already have a picture URL, or if fetch is disabled, or if already fetching
     if (profilePictureUrl || !fetchIfMissing || isLoading || fetchedPictureUrl !== null) return;
     
     const fetchProfilePicture = async () => {
@@ -42,12 +40,10 @@ export function UserAvatar({
     fetchProfilePicture();
   }, [username, profilePictureUrl, fetchIfMissing, isLoading, fetchedPictureUrl]);
   
-  // Get the first letter for fallback
   const getInitials = (name: string): string => {
     return name.charAt(0).toUpperCase();
   };
   
-  // Size classes
   const sizeClasses = {
     sm: "h-6 w-6 text-xs",
     md: "h-8 w-8 text-sm",
@@ -57,7 +53,6 @@ export function UserAvatar({
   const avatarClass = `${sizeClasses[size]} ${className}`;
   const fallbackClass = "bg-rose-100 text-rose-800";
 
-  // Use provided URL or fallback to fetched URL
   const effectiveProfilePicture = profilePictureUrl || fetchedPictureUrl;
 
   return (

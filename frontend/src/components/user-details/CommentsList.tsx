@@ -21,7 +21,7 @@ interface CommentsListProps {
   onDeleteComment: (id: number) => void;
   onDeleteAllComments: () => void;
   isCurrentUser: boolean;
-  showDeleteControls?: boolean; // New prop to show delete buttons
+  showDeleteControls?: boolean; 
 }
 
 export default function CommentsList({
@@ -38,7 +38,7 @@ export default function CommentsList({
   onDeleteComment,
   onDeleteAllComments,
   isCurrentUser,
-  showDeleteControls = false // Default to false for backward compatibility
+  showDeleteControls = false 
 }: CommentsListProps) {
   
   const formatDate = (dateString?: string) => {

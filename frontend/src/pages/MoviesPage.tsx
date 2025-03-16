@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useKeycloak } from '@react-keycloak/web';
 import moviesApi from '@/api/movieApi';
 import genresApi from '@/api/genresApi';
-import watchlistApi from '@/api/watchlistApi';
 import { Movie, Genre } from '@/api/apiService';
 import { Loader2, Search, LayoutGrid, List, Filter, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -34,9 +33,7 @@ import { MovieGrid } from "./movies/MovieGrid";
 import { MovieList } from "./movies/MovieList";
 import { ActiveFilters } from "./movies/ActiveFilters";
 import { deleteMovie } from "./movies/movieUtils";
-import adminApi from '@/api/adminApi';
 
-// Define filter types
 interface MovieFilters {
   genreIds: number[];
   ratingRange: [number, number];
@@ -52,16 +49,13 @@ export default function MoviesPage() {
   const [deleteMovieId, setDeleteMovieId] = useState<number | null>(null);
   const [refreshLoading, setRefreshLoading] = useState(false);
   
-  // Infinite scroll state
   const [currentPage, setCurrentPage] = useState(1);
-  const PAGE_SIZE = 12; // Number of movies to load per "page"
+  const PAGE_SIZE = 12; 
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   
-  // Determine the current year for ranges
   const currentYear = new Date().getFullYear();
   
-  // Filter states
   const [availableGenres, setAvailableGenres] = useState<Genre[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<MovieFilters>({
@@ -69,43 +63,34 @@ export default function MoviesPage() {
     ratingRange: [0, 10],
   });
   
-  // Track min and max possible years separately - keep this for potential future use
-  const [yearBounds, setYearBounds] = useState<[number, number]>([1900, currentYear]);
+  const [_, setYearBounds] = useState<[number, number]>([1900, currentYear]);
   
-  // Track states for filters and deletion
   const [isFilterActive, setIsFilterActive] = useState(false);
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   
   const { toast } = useToast();
   const navigate = useNavigate();
   const { keycloak, initialized } = useKeycloak();
-  const isAuthenticated = initialized && keycloak.authenticated;
 
-  // Get admin status
   const isAdmin = initialized && 
     keycloak.authenticated && 
     keycloak.hasRealmRole('ADMIN');
 
-  // Modified function to fetch movies with refresh support
   const fetchMoviesData = async (showLoading = true) => {
     try {
       if (showLoading) setLoading(true);
       else setRefreshLoading(true);
       
-      // Add a cache-busting timestamp to ensure we get fresh data
       const timestamp = new Date().getTime();
       const moviesData = await moviesApi.getRandomized(timestamp);
       
-      // No need to shuffle, the API returns randomized data
       setMovies(moviesData);
       
-      // Determine year range based on available movies
       if (moviesData.length > 0) {
         const years = moviesData.map(movie => movie.year);
         const minYear = Math.min(...years);
         const maxYear = Math.max(...years);
         
-        // Update the bounds
         setYearBounds([minYear, maxYear]);
       }
     } catch (error) {
@@ -121,7 +106,6 @@ export default function MoviesPage() {
     }
   };
 
-  // Fetch initial movies and genres on component mount
   useEffect(() => {
     let isMounted = true;
     
@@ -129,13 +113,11 @@ export default function MoviesPage() {
       try {
         setLoading(true);
         
-        // Fetch genres
         const genresData = await genresApi.getAll();
         if (!isMounted) return;
         
         setAvailableGenres(genresData);
         
-        // Fetch movies separately using our reusable function
         await fetchMoviesData(false);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -160,17 +142,14 @@ export default function MoviesPage() {
     };
   }, []); 
 
-  // Apply search and filters to movies
   useEffect(() => {
     if (movies.length === 0) {
       setFilteredMovies([]);
       return;
     }
     
-    // Start with all movies
     let result = [...movies];
     
-    // Apply search term filter if any
     if (searchTerm.trim()) {
       const lowercaseSearch = searchTerm.toLowerCase();
       result = result.filter((movie) => 
@@ -180,14 +159,12 @@ export default function MoviesPage() {
       );
     }
     
-    // Apply genre filter if any
     if (filters.genreIds.length > 0) {
       result = result.filter((movie) =>
         movie.genres.some((genre) => filters.genreIds.includes(genre.id))
       );
     }
     
-    // Apply rating range filter - only if different from the full range
     const isRatingFiltered =
       filters.ratingRange[0] > 0 || 
       filters.ratingRange[1] < 10;
@@ -200,12 +177,10 @@ export default function MoviesPage() {
     
     setFilteredMovies(result);
     
-    // Reset displayed movies and pagination when filters change
     setDisplayedMovies(result.slice(0, PAGE_SIZE));
     setCurrentPage(1);
     setHasMore(result.length > PAGE_SIZE);
     
-    // Set filter active status
     const isActive = 
       filters.genreIds.length > 0 || 
       isRatingFiltered;
@@ -213,29 +188,24 @@ export default function MoviesPage() {
     setIsFilterActive(isActive);
   }, [searchTerm, movies, filters]);
 
-  // Function to load more movies
   const loadMoreMovies = useCallback(async () => {
     if (loadingMore || !hasMore) return;
     
     try {
       setLoadingMore(true);
       
-      // Calculate next page
       const nextPage = currentPage + 1;
       const startIdx = currentPage * PAGE_SIZE;
       const endIdx = startIdx + PAGE_SIZE;
       
-      // Get the next batch of movies from our filtered list
       const nextBatch = filteredMovies.slice(startIdx, endIdx);
       
       if (nextBatch.length === 0) {
         setHasMore(false);
       } else {
-        // Add the new batch to the displayed movies
         setDisplayedMovies(prev => [...prev, ...nextBatch]);
         setCurrentPage(nextPage);
         
-        // Check if there are more movies to load
         setHasMore(endIdx < filteredMovies.length);
       }
     } catch (error) {
@@ -267,7 +237,6 @@ export default function MoviesPage() {
     setDeleteMovieId(null);
   };
 
-  // Special case to clear all genres
   const handleGenreToggle = (genreId: number) => {
     if (genreId === -1) {
       setFilters(prev => ({ ...prev, genreIds: [] }));
@@ -311,6 +280,7 @@ export default function MoviesPage() {
   };
 
   // For watchlist operations in the movies listing page:
+  /* Keeping for future implementation
   const handleWatchlistToggle = async (movieId: number, isInWatchlist: boolean) => {
     if (!isAuthenticated) {
       keycloak.login();
@@ -331,12 +301,12 @@ export default function MoviesPage() {
     } catch (error) {
       console.error('Error updating watchlist:', error);
       
-      // Revert state on error
       setMovies(movies.map(movie => 
         movie.id === movieId ? { ...movie, isInWatchlist: isInWatchlist } : movie
       ));
     }
   };
+  */
 
   // Loading state
   if (loading) {
@@ -475,9 +445,7 @@ export default function MoviesPage() {
         />
       )}
       
-      {/* Content grid with optional filter sidebar */}
       <div className="flex flex-col md:flex-row gap-6">
-        {/* Filter sidebar - desktop only */}
         {showFilters && (
           <div className="hidden md:block w-64 shrink-0">
             <FilterPanel 
@@ -492,7 +460,6 @@ export default function MoviesPage() {
           </div>
         )}
         
-        {/* Main content with infinite scroll */}
         <div className="flex-grow">
           {filteredMovies.length === 0 ? (
             <div className="text-center py-12">

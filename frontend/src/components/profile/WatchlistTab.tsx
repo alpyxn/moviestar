@@ -14,7 +14,7 @@ interface WatchlistTabProps {
   removingItemId: number | null;
   onRemoveItem: (id: number) => void;
   watchlistEndRef: React.RefObject<HTMLDivElement>;
-  isViewOnly?: boolean; // Add this prop to hide remove buttons when viewing others' watchlists
+  isViewOnly?: boolean; 
 }
 
 export default function WatchlistTab({
@@ -25,7 +25,7 @@ export default function WatchlistTab({
   removingItemId,
   onRemoveItem,
   watchlistEndRef,
-  isViewOnly = false, // Default to false (normal mode with remove buttons)
+  isViewOnly = false, 
 }: WatchlistTabProps) {
 
   if (watchlist.length === 0) {
@@ -47,11 +47,9 @@ export default function WatchlistTab({
     <>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
         {displayedItems.map((item) => {
-          // Determine if we're dealing with a WatchlistItem or Movie object
           const movie = item.movie || item;
           const itemId = item.id || (movie?.id || 0);
           
-          // Skip rendering if movie is undefined or doesn't have required data
           if (!movie || typeof movie !== 'object') {
             console.error('Invalid movie data in watchlist item:', item);
             return null;
@@ -81,7 +79,6 @@ export default function WatchlistTab({
                 </div>
               </Link>
               
-              {/* Remove Button - only shown if not in view-only mode */}
               {!isViewOnly && (
                 <button
                   className="absolute top-2 right-2 bg-black/70 hover:bg-black/90 rounded-full p-1.5 text-white opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100"

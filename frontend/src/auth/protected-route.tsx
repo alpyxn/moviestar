@@ -15,7 +15,6 @@ export function ProtectedRoute({
   const auth = useAuth();
   const location = useLocation();
 
-  // Wait for Keycloak to initialize - only block if auth is required
   if (!auth.initialized && requireAuth) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
@@ -24,12 +23,10 @@ export function ProtectedRoute({
     );
   }
 
-  // Check authentication if required
   if (requireAuth && !auth.isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Check roles if specified and user is authenticated
   if (auth.isAuthenticated && requiredRoles.length > 0 && !requiredRoles.some(role => auth.hasRole(role))) {
     return <Navigate to="/unauthorized" replace />;
   }

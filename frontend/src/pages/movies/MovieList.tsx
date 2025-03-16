@@ -20,25 +20,19 @@ export function MovieList({ movies, isAdmin, navigate, setDeleteMovieId, size = 
   const isAuthenticated = initialized && keycloak.authenticated;
   const { toast } = useToast();
   
-  // Track which movies are being added to watchlist
   const [addingToWatchlist, setAddingToWatchlist] = useState<Record<number, boolean>>({});
-  // Track watchlist status for movies
   const [watchlistStatus, setWatchlistStatus] = useState<Record<number, boolean>>({});
   
-  // Fetch watchlist statuses with added robustness
   const fetchWatchlistStatuses = useCallback(async () => {
     if (!isAuthenticated) return;
     
     try {
-      // Extract all movie IDs
       const movieIds = movies.map(movie => movie.id);
       
       if (movieIds.length === 0) return;
       
-      // Use our client-side batch check method with improved error handling
       const statuses = await watchlistApi.batchCheckWatchlistStatus(movieIds);
       
-      // Only update state if we got results
       if (Object.keys(statuses).length > 0) {
         setWatchlistStatus(statuses);
       }
@@ -47,12 +41,10 @@ export function MovieList({ movies, isAdmin, navigate, setDeleteMovieId, size = 
     }
   }, [movies, isAuthenticated]);
   
-  // Check watchlist status when movies change or auth state changes
   useEffect(() => {
     fetchWatchlistStatuses();
   }, [fetchWatchlistStatuses]);
   
-  // Handle adding to watchlist with improved error handling
   const handleAddToWatchlist = async (movieId: number, event: React.MouseEvent) => {
     event.stopPropagation();
     
@@ -67,18 +59,15 @@ export function MovieList({ movies, isAdmin, navigate, setDeleteMovieId, size = 
       const currentStatus = watchlistStatus[movieId];
       
       if (currentStatus) {
-        // Remove from watchlist
         await watchlistApi.removeFromWatchlist(movieId);
         toast({ title: "Removed from watchlist" });
         setWatchlistStatus(prev => ({ ...prev, [movieId]: false }));
       } else {
-        // Add to watchlist
         await watchlistApi.addToWatchlist(movieId);
         toast({ title: "Added to watchlist" });
         setWatchlistStatus(prev => ({ ...prev, [movieId]: true }));
       }
       
-      // Re-fetch all statuses to ensure consistency
       await fetchWatchlistStatuses();
     } catch (error) {
       console.error('Error updating watchlist:', error);
@@ -88,14 +77,12 @@ export function MovieList({ movies, isAdmin, navigate, setDeleteMovieId, size = 
         variant: 'destructive',
       });
       
-      // Restore previous state on error
       await fetchWatchlistStatuses();
     } finally {
       setAddingToWatchlist(prev => ({ ...prev, [movieId]: false }));
     }
   };
   
-  // Apply size-based styling
   const imageHeight = size === 'large' ? 'h-48' : 'h-36'; 
   const titleSize = size === 'large' ? 'text-2xl' : 'text-xl';
   const descriptionClass = size === 'large' ? 'text-base' : 'text-sm';

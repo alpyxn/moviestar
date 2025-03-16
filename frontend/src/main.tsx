@@ -13,14 +13,12 @@ const initOptions = {
   pkceMethod: "S256"
 };
 
-// Add a simple loading component
 const Loading = () => (
   <div className="flex items-center justify-center h-screen">
     <div className="text-lg">Loading...</div>
   </div>
 );
 
-// Layout component to ensure consistent structure
 const Layout = () => (
   <div className="min-h-screen flex flex-col">
     <Navbar />

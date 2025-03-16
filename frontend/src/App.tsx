@@ -14,7 +14,7 @@ import DirectorsPage from "./pages/DirectorsPage";
 import ActorsPage from "./pages/ActorsPage";
 import MovieDetails from "./pages/MovieDetails"; // Import the new MovieDetails component
 import AdminDashboard from "./pages/admin/AdminDashboard";
-import AddDirector from "./pages/admin/AddDirector";
+import AddDirector from "./pages/admin/AddEditDirector";
 import AddActor from "./pages/admin/AddActor";
 import ManageGenres from "./pages/admin/ManageGenres";
 import AddEditMovie from "./pages/admin/AddEditMovie";
@@ -26,7 +26,6 @@ import UserDetails from "./pages/UserDetails";
 import AddEditActor from "./pages/admin/AddEditActor";
 import AdminUsers from "./pages/admin/AdminUsers";
 
-// Temporary components until implemented
 const Unauthorized = () => (
   <div className="container py-10 text-center">
     <h1 className="text-2xl font-bold">Unauthorized Access</h1>
@@ -56,7 +55,6 @@ export const ProtectedRoute = ({
   const { keycloak, initialized } = useKeycloak();
 
   useEffect(() => {
-    // Force token refresh when mounting protected routes
     if (initialized && keycloak.authenticated) {
       keycloak.updateToken(30).catch(() => {
         console.log("Token refresh failed, redirecting to login");
@@ -65,7 +63,6 @@ export const ProtectedRoute = ({
     }
   }, [keycloak, initialized]);
 
-  // If not initialized and authentication is required, show loading
   if (!initialized && requireAuth) {
     return (
       <div className="flex flex-col items-center justify-center h-screen">
@@ -75,7 +72,6 @@ export const ProtectedRoute = ({
     );
   }
 
-  // If authentication is required but user is not authenticated, redirect to login
   if (requireAuth && !keycloak.authenticated) {
     keycloak.login();
     return (
@@ -86,7 +82,6 @@ export const ProtectedRoute = ({
     );
   }
 
-  // Check roles if provided and user is authenticated
   if (
     keycloak.authenticated &&
     requiredRoles.length > 0 &&
@@ -105,11 +100,11 @@ function App() {
     <div className="min-h-screen bg-background pt-16 flex flex-col">
       <Toaster />
       <Routes>
+
         {/* Public routes - available without authentication */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/movies" element={<MoviesPage />} />
         <Route path="/movies/:id" element={<MovieDetails />} />{" "}
-        {/* Use our new component */}
         <Route path="/directors" element={<DirectorsPage />} />
         <Route path="/directors/:id" element={<DirectorDetails />} />
         <Route path="/actors" element={<ActorsPage />} />
@@ -117,6 +112,7 @@ function App() {
         <Route path="/unauthorized" element={<Unauthorized />} />
         <Route path="/login" element={<Login />} />
         <Route path="/users/:username" element={<UserDetails />} />
+
         {/* Movie interaction routes - require authentication */}
         <Route
           path="/movies/:id/rate"
