@@ -2,6 +2,7 @@ import { Movie } from "@/api/apiService";
 import { Button } from "@/components/ui/button";
 import { Calendar, Edit, Shield, Star, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import fallbackBackdrop from "../../assets/fallback-backdrop.png";
 
 interface MovieHeroProps {
   movie: Movie;
@@ -15,7 +16,7 @@ export default function MovieHero({ movie, isAdmin, onDeleteClick }: MovieHeroPr
   return (
     <div
       className="h-[50vh] bg-cover bg-center relative"
-      style={{ backgroundImage: `url(${movie.backdropURL || ''})` }}
+      style={{ backgroundImage: `url(${movie.backdropURL || fallbackBackdrop})` }}
     >
       <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-background" />
       <div className="container mx-auto h-full flex items-end pb-8 px-4 relative z-10">

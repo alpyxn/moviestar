@@ -52,7 +52,7 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="relative w-full min-h-[85vh] flex flex-col items-center justify-center text-center bg-gradient-to-br from-slate-900 via-rose-900 to-slate-900 mt-0">
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute inset-0 bg-[url('/hero-bg.jpg')] bg-cover bg-center opacity-20"></div>
+          <div className="absolute inset-0 bg-cover bg-center opacity-20"></div>
           <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80"></div>
         </div>
         <div className="relative z-10 px-4 max-w-4xl mx-auto">
