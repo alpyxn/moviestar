@@ -19,6 +19,23 @@ This repository contains both the frontend and backend components of the MovieSt
 - User watchlists
 - Admin panel for content management
 
+### Feature Showcase
+
+#### Landing Page
+![Landing Page Showcase](./gifs/gif1.gif)
+
+#### Movie Details and Comments
+![Movie Details and Comments](./gifs/gif2.gif)
+
+#### Admin Dashboard
+![Admin Dashboard](./gifs/gif3.gif)
+
+#### User Profiles
+![User Profile Page](./gifs/gif4.gif)
+
+#### Directors and Actors
+![Directors and Actors](./gifs/gif5.gif)
+
 ## Technology Stack
 
 ### Frontend
