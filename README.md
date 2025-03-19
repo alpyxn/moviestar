@@ -44,6 +44,7 @@ This repository contains both the frontend and backend components of the MovieSt
 - Authentication with Keycloak
 - Axios for API communication
 - Tailwind CSS for styling
+- Cloudinary for image storage and management
 
 ### Backend
 - Spring Boot Java application
@@ -86,7 +87,10 @@ VITE_API_URL=http://localhost:8081/api
 VITE_KEYCLOAK_URL=http://localhost:8080
 VITE_KEYCLOAK_REALM=moviestar
 VITE_KEYCLOAK_CLIENT_ID=moviestar-frontend
-```
+VITE_CLOUDINARY_CLOUD_NAME=your_cloud_name
+VITE_CLOUDINARY_UPLOAD_PRESET=your_upload_preset
+VITE_CLOUDINARY_QUALITY=auto:best
+VITE_CLOUDINARY_FETCH_FORMAT=auto
 
 3. Start the development server:
 ```bash
