@@ -21,20 +21,35 @@ This repository contains both the frontend and backend components of the MovieSt
 
 ### Feature Showcase
 
-#### Landing Page
+<details>
+<summary>Landing Page</summary>
+
 ![Landing Page Showcase](./gifs/gif1.gif)
+</details>
 
-#### Movie Details and Comments
+<details>
+<summary>Movie Details and Comments</summary>
+
 ![Movie Details and Comments](./gifs/gif2.gif)
+</details>
 
-#### Admin Dashboard
+<details>
+<summary>Admin Dashboard</summary>
+
 ![Admin Dashboard](./gifs/gif3.gif)
+</details>
 
-#### User Profiles
+<details>
+<summary>User Profiles</summary>
+
 ![User Profile Page](./gifs/gif4.gif)
+</details>
 
-#### Directors and Actors
+<details>
+<summary>Directors and Actors</summary>
+
 ![Directors and Actors](./gifs/gif5.gif)
+</details>
 
 ## Technology Stack
 
